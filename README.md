@@ -16,5 +16,7 @@ yarn run test
 TBD.
 
 ```bash
-yarn run release
+yarn
+yarn run compile
+yarn pack
 ```

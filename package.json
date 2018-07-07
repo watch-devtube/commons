@@ -1,6 +1,6 @@
 {
   "name": "devtube-commons",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "description": "DevTube Commons",  
   "repository": "https://github.com/watch-devtube/commons.git",
   "main": "dist/index.js",
@@ -10,6 +10,9 @@
     "test": "jest",
     "compile": "rimraf dist && tsc"
   },
+  "files": [
+    "dist/"
+  ],
   "dependencies": {
     "dnscache": "^1.0.1",
     "lodash": "^4.17.4",
