@@ -7,47 +7,41 @@ import * as Loki from 'lokijs'
 import { firstBy } from 'thenby'
 import { Logger } from './Logger'
 
-// 1) don't forget to update docs with wildcard support, field:search, title:foo* bar
-// A B means A or B
-// +foo +bar means 
-
-// 2) multi-word tags :(
-// 3) f#, c++
-
 export default class Fastr {
 
-  lunr: Lunr.Index
-  videos: any
+  lunr: Lunr
 
   tags: Set<string>
-  speakers: Collection<any>
+
+  videos: any
+  speakers: any
   channels: any
 
-  constructor(docsHome: String) {
+  constructor(docsHome: string, dbName: string = 'mem.db') {
 
-    let loki = new Loki('mem.db')
-
-    let videos = loki.addCollection('videos', { 
+    let loki = new Loki(dbName)
+    
+    let videos = loki.addCollection(`${dbName}-videos`, { 
       unique: ['objectID'],
       indices: ['satisfaction']
     })
 
-    let speakers = loki.addCollection('speakers', { 
+    let speakers = loki.addCollection(`${dbName}-speakers`, { 
       unique: ['twitter']
     })
 
-    let channels = loki.addCollection('channels', { 
+    let channels = loki.addCollection(`${dbName}-channels`, { 
       unique: ['id']
     })    
 
     let tags = new Set<string>()
+
     this.tags = tags
     this.channels = channels
     this.speakers = speakers
     this.videos = videos
 
-    let docLoader = () => {      
-
+    let docLoader = () => {
       let walkSync = (dir, filelist = []) => {
           fs.readdirSync(dir).forEach(file => {
             filelist = fs.statSync(path.join(dir, file)).isDirectory()
@@ -61,29 +55,28 @@ export default class Fastr {
 
       let docs = walkSync(docsHome)
         .filter(f => f.endsWith('.json'))
-        .map(f => JSON.parse(fs.readFileSync(f).toString()))
+        .map(f => require(f))
 
       Logger.info(`${docs.length} docs loaded`)
-
       return docs
-
     }     
 
     let docsLoaded = docLoader() 
 
     this.lunr = Lunr(function () {
 
+      this.pipeline.remove(Lunr.trimmer)
+
       this.ref('objectID')
       this.field('title')
       this.field('speaker', { extractor: (doc) => doc.speaker ? doc.speaker.name : doc.speaker })
-      this.field('tags')
+      this.field('tags', { extractor: (doc) => doc.tags ? doc.tags.join(' ') : doc.tags })
       this.field('channelTitle')
 
-      docsLoaded.forEach((video: any) => {
+      docsLoaded.forEach(video => {
 
-        // TODO: Logger.info(`Adding ${video.objectID}`)
         this.add(video)
-        
+
         if (video.speaker && !speakers.by("twitter", video.speaker.twitter)) {
           speakers.insert(video.speaker)  
         }
@@ -92,23 +85,28 @@ export default class Fastr {
           channels.insert({
             id: video.channelId,
             title: video.channelTitle
-          } as any)  
+          } as any)
         }
 
         if (video.tags) {
           video.tags.forEach(tag => tags.add(tag))
         }
-        
+
         videos.insert(video)
 
       })
-
     })    
-    
+  }
+
+  stripMetadata(loki_rec) {
+    const clean_rec = Object.assign({}, loki_rec)
+    delete clean_rec['meta']
+    delete clean_rec['$loki']
+    return clean_rec
   }
 
   searchChannels() {
-    return this.channels.chain().simplesort('title').data()
+    return this.channels.chain().simplesort('title').data().map(this.stripMetadata)
   }
 
   searchTags() {
@@ -116,42 +114,36 @@ export default class Fastr {
   }
 
   searchSpeakers() {
-    return this.speakers.chain().simplesort('name').data()
+    return this.speakers.chain().simplesort('name').data().map(this.stripMetadata)
   }
 
-  search(query: string, refinement = {}, sortProperty: string, page: number, maxHitsPerPage: number, maxHitsPerQuery: number) {
-    // if there is fuzzy query string provided, then search in Loki
-    if (!query) {
-      let descending = true
-      return this.videos
-        .chain()
-        .find(refinement)
-        .simplesort(sortProperty, descending)
-        .offset(page * maxHitsPerPage)
-        .limit(maxHitsPerQuery)
-        .data()
-    }
-
-    // if fuzzy query string provided, then search in Lunr AND Loki
+  search(query: string, refinement = {}, sortProperty: string) {
     if (query) {
-      let queryHits = this.searchInLunr(query, sortProperty, page, maxHitsPerPage, maxHitsPerQuery)
-      return queryHits
-    }    
-
+      return this.searchInLunr(query, sortProperty)
+    } else {
+      return this.searchInLoki(refinement, sortProperty)
+    }
   }
 
   serialize(path: string) {
     fs.writeFileSync(path, JSON.stringify(this.lunr))
   }
 
-  private searchInLunr(query: string, sortProperty: string, page: number, maxHitsPerPage: number, maxHitsPerQuery: number) {
+  private searchInLoki(refinement = {}, sortProperty: string) {
+    let descending = true
+    return this.videos
+      .chain()
+      .find(refinement)
+      .simplesort(sortProperty, descending)
+      .data()
+  }
+
+  private searchInLunr(query: string, sortProperty: string) {
     let hits = this.lunr.search(query)
     let hitsTotal = hits.length
-    let sortPropertyDesc = `-${sortProperty}`
     return hits
       .map(hit => this.videos.by("objectID", hit.ref))
       .sort(firstBy(sortProperty, -1))
-      .slice(page * maxHitsPerPage, page * maxHitsPerPage + maxHitsPerQuery)
   }
 
 }
