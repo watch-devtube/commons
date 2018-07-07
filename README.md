@@ -7,16 +7,14 @@ DevTube common code.
 
 ```bash
 yarn
-yarn run compile
-yarn run test
+yarn compile
+yarn test
 ```
 
 # How to publish
 
-TBD.
-
 ```bash
 yarn
-yarn run compile
+yarn compile
 yarn pack
 ```

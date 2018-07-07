@@ -1,0 +1,16 @@
+language: node_js
+branches:
+  only:
+  - master
+before_install:
+- npm i typescript -g
+script:
+- yarn
+- yarn compile
+- yarn pack
+# - TODO: rename file
+# deploy:
+#   provider: releases
+#   api_key: "GITHUB OAUTH TOKEN"
+#   file: file
+#   skip_cleanup: true
