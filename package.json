@@ -3,11 +3,12 @@
   "version": "0.2.0",
   "description": "DevTube Commons",  
   "repository": "https://github.com/watch-devtube/commons.git",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types" : "dist/index.d.ts",
   "author": "Andrey Adamovich",
   "scripts": {
     "test": "jest",
-    "compile": "tsc --project tsconfig.json"
+    "compile": "rimraf dist && tsc"
   },
   "dependencies": {
     "dnscache": "^1.0.1",

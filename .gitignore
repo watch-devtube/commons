@@ -62,3 +62,9 @@ typings/
 
 # generated javascript files
 src/*.js
+
+# serialized index
+fastr.json
+
+# build dir
+dist

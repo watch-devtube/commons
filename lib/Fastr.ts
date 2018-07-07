@@ -18,13 +18,15 @@ export default class Fastr {
 
   lunr: Lunr.Index
   videos: any
+
   tags: Set<string>
-  speakers: any
+  speakers: Collection<any>
   channels: any
 
   constructor(docsHome: String) {
 
     let loki = new Loki('mem.db')
+
     let videos = loki.addCollection('videos', { 
       unique: ['objectID'],
       indices: ['satisfaction']
@@ -45,6 +47,7 @@ export default class Fastr {
     this.videos = videos
 
     let docLoader = () => {      
+
       let walkSync = (dir, filelist = []) => {
           fs.readdirSync(dir).forEach(file => {
             filelist = fs.statSync(path.join(dir, file)).isDirectory()
@@ -54,12 +57,11 @@ export default class Fastr {
           return filelist
       }
 
-      Logger.info(`Experimental Fastr storage mode is turned on.`)
       Logger.info(`Loading .json docs from dir ${docsHome}`)
 
       let docs = walkSync(docsHome)
         .filter(f => f.endsWith('.json'))
-        .map(f => fs.readFileSync(f).toJSON())
+        .map(f => JSON.parse(fs.readFileSync(f).toString()))
 
       Logger.info(`${docs.length} docs loaded`)
 
@@ -78,7 +80,10 @@ export default class Fastr {
       this.field('channelTitle')
 
       docsLoaded.forEach((video: any) => {
+
+        // TODO: Logger.info(`Adding ${video.objectID}`)
         this.add(video)
+        
         if (video.speaker && !speakers.by("twitter", video.speaker.twitter)) {
           speakers.insert(video.speaker)  
         }
@@ -93,8 +98,11 @@ export default class Fastr {
         if (video.tags) {
           video.tags.forEach(tag => tags.add(tag))
         }
+        
         videos.insert(video)
+
       })
+
     })    
     
   }
@@ -130,6 +138,10 @@ export default class Fastr {
       return queryHits
     }    
 
+  }
+
+  serialize(path: string) {
+    fs.writeFileSync(path, JSON.stringify(this.lunr))
   }
 
   private searchInLunr(query: string, sortProperty: string, page: number, maxHitsPerPage: number, maxHitsPerQuery: number) {

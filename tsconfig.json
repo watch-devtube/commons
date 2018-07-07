@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "./dist",    
     "removeComments": true,
     "lib": [
       "es2015",
