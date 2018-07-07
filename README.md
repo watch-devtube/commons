@@ -5,14 +5,16 @@ DevTube common code.
 
 # How to build
 
-´´´bash
+```bash
 yarn
 yarn run compile
 yarn run test
-´´´
+```
 
 # How to publish
 
-´´´bash
+TBD.
+
+```bash
 yarn run release
-´´´
+```
