@@ -55,7 +55,7 @@ export default class Fastr {
 
       let docs = walkSync(docsHome)
         .filter(f => f.endsWith('.json'))
-        .map(f => require(f))
+        .map(f => JSON.parse(fs.readFileSync(f).toString()))
 
       Logger.info(`${docs.length} docs loaded`)
       return docs
