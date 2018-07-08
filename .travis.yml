@@ -4,6 +4,10 @@ node_js:
 branches:
   only:
   - master
+cache:
+  yarn: true
+  directories:
+    - node_modules
 before_install:
 - npm i typescript -g
 - npm i rimraf -g
