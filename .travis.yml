@@ -16,6 +16,7 @@ script:
 - yarn compile
 - ls -la dist
 - yarn pack
+- tar -tvf *.tgz
 # - TODO: rename file
 # deploy:
 #   provider: releases
