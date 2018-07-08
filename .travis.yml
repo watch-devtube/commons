@@ -14,7 +14,7 @@ before_install:
 script:
 - yarn
 - yarn compile
-- ls -latr dist
+- ls -latR dist
 - yarn pack
 - tar -tvf *.tgz
 # - TODO: rename file
