@@ -8,7 +8,8 @@
   "author": "Andrey Adamovich",
   "scripts": {
     "test": "jest",
-    "compile": "rimraf dist && tsc"
+    "clean": "rimraf dist",
+    "compile": "tsc"
   },
   "files": [
     "dist/"

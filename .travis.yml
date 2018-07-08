@@ -10,6 +10,7 @@ before_install:
 script:
 - yarn
 - yarn compile
+- ls -la dist
 - yarn pack
 # - TODO: rename file
 # deploy:
