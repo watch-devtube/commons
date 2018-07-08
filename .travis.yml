@@ -1,25 +1,34 @@
 language: node_js
 node_js:
-  - "9"
+- '9'
 branches:
   only:
   - master
 cache:
   yarn: true
   directories:
-    - node_modules
+  - node_modules
 before_install:
 - npm i typescript -g
 - npm i rimraf -g
 script:
 - yarn
+- yarn clean
 - yarn compile
 - ls -latR dist
 - yarn pack
 - tar -tvf *.tgz
-# - TODO: rename file
-# deploy:
-#   provider: releases
-#   api_key: "GITHUB OAUTH TOKEN"
-#   file: file
-#   skip_cleanup: true
+before_deploy:
+- git config --local user.name "DevTube Bot"
+- git config --local user.email "bot@dev.tube"
+- git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
+deploy:
+  provider: releases
+  api_key:
+    secure: pSDHs2lOw7d9JlhgpVIbTxZlFm4nWGsZ5W7kTLA7aogtazwrtWeA3+u/6wj351atR00BqmFgyfmEJ5DRFcyRAtuh3idHLSgbPrC69D1QNXHmT1XwuG85Nq0QHbFKwNINaiy7JMp0ZkHg61p/l5nNHzAQkIR2t2JaD7+ViPegGvO/4w0hs0xP3KmOjklZdInzF2WiKipyWaBIn/3JoB/55MgvYecDHI9OGhC+0B3BT4Jsuy48Bgd3qI6a9nSBUj7eDIxLjtkxfBcimh3AO/aLHS2ulHjqHApmfBvAhzNjO7QTbvbOoeHUv2SQREi2CUdGGvA2JNJRA8EPRjqbM10sgzsCFQzVTY1Ht4O85eOCu/2jk/HYui4wDX4Nqrxx2pcXmdE8AaJkI+uTYVk19cEEdWYF+To5DVp1G56bNTryvPsbgrCXCMCXO6a5LqYUuThEUx2zHHBFLwK+jmkGManCeLgLnGBQma9NyGY7g/w/uzV2oV/m22YsGIzqJn/UGVOv7ALhkytqi0jnFbj0WfFWIFn+zqUo/P1D/e4iN9p1btM59aKN9mE5cyP4Ptv1+5tsgxShMhuRbWW4zsd7v5y6HzaCE/R0l26dhezjWfgTb9vTq/rtenbfCJOoWpbzSdhmOv6qTEXuLpKJc5kmpaQuLpVfmr6zSyQn1wx+0uBaL1U=
+  file: devtube-commons-v0.1.0.tgz
+  overwrite: true
+  skip_cleanup: true
+notifications:
+  slack:
+    secure: N9RpVCiydqNitOLkD9epVmLDKEaMTFFG+tf4/gwrihm16FhUwXFkAy0VbuOxyV5IOrYe7e2VxSh6bIGp1d4rL52PLz21+/0RTBrAcBPDa5dd2OwFtwbkY/dvKNz2LeAiudACxY6I8UPZDjmKG2ImDk+WrXwVj5bIKO6Ya2G7+PA0+duxa8u4voCuR3VzTB4O3YLOymQApbN0u9YDAPhh4S5bzU84cV+vP0b2fqjIo/xgE0XyrQHbl8jk33LeFfhrktK30eH7KRqB3Rff1g/Uwe7eWy+pu3pXdEirprk7Xc3hJfKXy54755qCfL195tT3XitfYxxms0/82V767hd8+btu74wkcISXslcIu+iz4WxkCWqDUsooTKBFq5Y69WXEzBVEtnPWROh6VzlM7OB46z0SBphaBfpNg3YeBCEUGXK6iowEucceLkIz9HpMNBnpUAarMSneVdqUDD0syjVe2seDI6qToZrlTnK7Ws1ff6TWYDLwFLmotjdpqosuSWyR6Ci4EY6FNitaYSUqFD8HneuiYLlVWLLz1WW9D1DVSufuJiIQENDJkALXIU6kiaFCdFFxWs1NEEmzkpiXUbXGCqJQdqBE8Yyw4kc4BO9yZPZw2uSkZ/w+9XgaXGACOAfHVoW3NytQjC47+vN9uO6OEjnN8G4b+aRWBUmDPrXZGZE=
