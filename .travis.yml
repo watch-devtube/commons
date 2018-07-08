@@ -21,7 +21,7 @@ script:
 before_deploy:
 - git config --local user.name "DevTube Bot"
 - git config --local user.email "bot@dev.tube"
-- git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
+- git tag "$(date +'%Y%m%d%H%M')"
 deploy:
   provider: releases
   api_key:
