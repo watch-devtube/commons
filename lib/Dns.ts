@@ -36,9 +36,9 @@ export class Dns {
     dnsNames.forEach(dnsName => {
       dnsCache.lookup(dnsName, (err, result) => {
         if (err) {
-          Logger.error(`${dnsName}: ${JSON.stringify(err)}`)
+          Logger.error(`DNS ERROR: ${dnsName}: ${JSON.stringify(err)}`)
         } else {
-          Logger.debug(`${dnsName}: ${JSON.stringify(result)}`)
+          Logger.debug(`DNS QUERY: ${dnsName}: ${JSON.stringify(result)}`)
         }    
       })  
     })
