@@ -9,100 +9,101 @@ import { Logger } from './Logger'
 
 export default class Fastr {
 
-  lunr: Lunr
+  private loki: Loki
+  private lunr: Lunr.Index
 
-  tags: Set<string>
+  private tags: Set<string>
 
-  videos: any
-  speakers: any
-  channels: any
+  private videos: any
+  private speakers: any
+  private channels: any
 
-  constructor(docsHome: string, dbName: string = 'mem.db') {
+  constructor(dataHome: string, serialized: boolean = false) {
 
-    let loki = new Loki(dbName)
-    
-    let videos = loki.addCollection(`${dbName}-videos`, { 
+    this.loki = new Loki('mem.db')
+
+    if (!serialized) {
+      this.buildIndex(path.resolve(dataHome))  
+    } else {
+      this.loadIndex(path.resolve(dataHome))
+    }
+
+  }
+
+  private buildIndex(dataHome: string) {
+
+    this.videos = this.loki.addCollection(`videos`, { 
       unique: ['objectID'],
       indices: ['satisfaction']
     })
 
-    let speakers = loki.addCollection(`${dbName}-speakers`, { 
+    this.speakers = this.loki.addCollection(`speakers`, { 
       unique: ['twitter']
     })
 
-    let channels = loki.addCollection(`${dbName}-channels`, { 
+    this.channels = this.loki.addCollection(`channels`, { 
       unique: ['id']
     })    
 
-    let tags = new Set<string>()
+    this.tags = new Set<string>()
 
-    this.tags = tags
-    this.channels = channels
-    this.speakers = speakers
-    this.videos = videos
+    let builder = new Lunr.Builder()
+    builder.pipeline.remove(Lunr.trimmer)
 
-    let docLoader = () => {
-      let walkSync = (dir, filelist = []) => {
-          fs.readdirSync(dir).forEach(file => {
-            filelist = fs.statSync(path.join(dir, file)).isDirectory()
-              ? walkSync(path.join(dir, file), filelist)
-              : filelist.concat(path.join(dir, file))
-          })
-          return filelist
+    builder.ref('objectID')
+    builder.field('title')
+    builder.field('speaker', { extractor: (doc) => doc.speaker ? doc.speaker.name : doc.speaker })
+    builder.field('tags', { extractor: (doc) => doc.tags ? doc.tags.join(' ') : doc.tags })
+    builder.field('channelTitle')
+
+    this.listDocuments(dataHome).forEach(video => {
+
+      builder.add(video)
+
+      if (video.speaker && !this.speakers.by("twitter", video.speaker.twitter)) {
+        this.speakers.insert(video.speaker)  
       }
 
-      Logger.info(`Loading .json docs from dir ${docsHome}`)
+      if (!this.channels.by("id", video.channelId)) {
+        this.channels.insert({
+          id: video.channelId,
+          title: video.channelTitle
+        } as any)
+      }
 
-      let docs = walkSync(docsHome)
-        .filter(f => f.endsWith('.json'))
-        .map(f => JSON.parse(fs.readFileSync(f).toString()))
+      if (video.tags) {
+        video.tags.forEach(tag => this.tags.add(tag))
+      }
 
-      Logger.info(`${docs.length} docs loaded`)
-      return docs
-    }     
+      this.videos.insert(video)
 
-    let docsLoaded = docLoader() 
+    })
+    
+    this.lunr = builder.build()
 
-    this.lunr = Lunr(function () {
-
-      this.pipeline.remove(Lunr.trimmer)
-
-      this.ref('objectID')
-      this.field('title')
-      this.field('speaker', { extractor: (doc) => doc.speaker ? doc.speaker.name : doc.speaker })
-      this.field('tags', { extractor: (doc) => doc.tags ? doc.tags.join(' ') : doc.tags })
-      this.field('channelTitle')
-
-      docsLoaded.forEach(video => {
-
-        this.add(video)
-
-        if (video.speaker && !speakers.by("twitter", video.speaker.twitter)) {
-          speakers.insert(video.speaker)  
-        }
-
-        if (!channels.by("id", video.channelId)) {
-          channels.insert({
-            id: video.channelId,
-            title: video.channelTitle
-          } as any)
-        }
-
-        if (video.tags) {
-          video.tags.forEach(tag => tags.add(tag))
-        }
-
-        videos.insert(video)
-
-      })
-    })    
   }
 
-  stripMetadata(loki_rec) {
-    const clean_rec = Object.assign({}, loki_rec)
-    delete clean_rec['meta']
-    delete clean_rec['$loki']
-    return clean_rec
+  private loadIndex(dataHome: string) {
+
+    this.loki.loadJSON(fs.readFileSync(path.join(path.resolve(dataHome), 'loki.json')).toString())
+    this.lunr = Lunr.Index.load(JSON.parse(fs.readFileSync(path.join(path.resolve(dataHome), 'lunr.json')).toString()))
+
+    this.tags = new Set<string>(JSON.parse(fs.readFileSync(path.join(path.resolve(dataHome), 'tags.json')).toString()))
+
+    this.videos = this.loki.getCollection('videos')
+    this.speakers = this.loki.getCollection('speakers')
+    this.channels = this.loki.getCollection('channels')
+
+  }
+
+  serialize(dir: string) {
+    let absDir = path.resolve(dir)
+    if (!fs.existsSync(absDir)) {
+      fs.mkdirSync(absDir)
+    }    
+    fs.writeFileSync(path.join(absDir, 'tags.json'), JSON.stringify(Array.from(this.tags)))
+    fs.writeFileSync(path.join(absDir, 'loki.json'), this.loki.serialize())    
+    fs.writeFileSync(path.join(absDir, 'lunr.json'), JSON.stringify(this.lunr))
   }
 
   searchChannels() {
@@ -125,10 +126,6 @@ export default class Fastr {
     }
   }
 
-  serialize(path: string) {
-    fs.writeFileSync(path, JSON.stringify(this.lunr))
-  }
-
   private searchInLoki(refinement = {}, sortProperty: string) {
     let descending = true
     return this.videos
@@ -144,6 +141,36 @@ export default class Fastr {
     return hits
       .map(hit => this.videos.by("objectID", hit.ref))
       .sort(firstBy(sortProperty, -1))
+  }
+
+  private stripMetadata(lokiRecord: any) {
+    const cleanRecord = Object.assign({}, lokiRecord)
+    delete cleanRecord['meta']
+    delete cleanRecord['$loki']
+    return cleanRecord
+  }
+
+  private listDocuments(dataHome: string): any[] {    
+    
+    Logger.info(`Loading .json docs from dir ${dataHome}`)
+    
+    let docs = this.walkDirSync(dataHome)
+      .filter(f => f.endsWith('.json'))
+      .map(f => JSON.parse(fs.readFileSync(f).toString()))
+    
+    Logger.info(`${docs.length} docs loaded`)
+    
+    return docs    
+
+  }
+
+  private walkDirSync(dir: string, fileList: string[] = []): string[] {
+    fs.readdirSync(dir).forEach(file => {
+      fileList = fs.statSync(path.join(dir, file)).isDirectory()
+        ? this.walkDirSync(path.join(dir, file), fileList)
+        : fileList.concat(path.join(dir, file));
+    })
+    return fileList
   }
 
 }
