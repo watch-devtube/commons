@@ -6,6 +6,7 @@ branches:
   - master
 before_install:
 - npm i typescript -g
+- npm i rimraf -g
 script:
 - yarn
 - yarn compile
