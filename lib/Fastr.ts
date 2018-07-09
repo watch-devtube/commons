@@ -18,19 +18,23 @@ export default class Fastr {
   private speakers: any
   private channels: any
 
-  constructor(dataHome: string, serialized: boolean = false) {
+  constructor(dataSource: string | any[], serialized: boolean = false) {
 
     this.loki = new Loki('mem.db')
 
     if (!serialized) {
-      this.buildIndex(path.resolve(dataHome))  
+      this.buildIndex(dataSource)
     } else {
-      this.loadIndex(path.resolve(dataHome))
+      if (typeof dataSource === "string") {
+        this.loadIndex(path.resolve(dataSource))
+      } else {
+        throw { message: "Invalid serialization data source" }
+      }
     }
 
   }
 
-  private buildIndex(dataHome: string) {
+  private buildIndex(dataSource: string | any[]) {
 
     this.videos = this.loki.addCollection(`videos`, { 
       unique: ['objectID'],
@@ -56,7 +60,14 @@ export default class Fastr {
     builder.field('tags', { extractor: (doc) => doc.tags ? doc.tags.join(' ') : doc.tags })
     builder.field('channelTitle')
 
-    this.listDocuments(dataHome).forEach(video => {
+    let docs
+    if (typeof dataSource === "string") {
+      docs = this.listDocuments(path.resolve(dataSource))
+    } else {
+      docs = dataSource
+    }
+
+    docs.forEach(video => {
 
       builder.add(video)
 

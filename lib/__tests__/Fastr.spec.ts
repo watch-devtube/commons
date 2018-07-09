@@ -1,16 +1,21 @@
 
-import * as path from 'path'
+import * as fs from 'fs'
 import Fastr from '../Fastr'
 
 describe('Fastr.ts', () => {
 
-  it('load and search Fastr index', () => {
-    let fastr = new Fastr(path.resolve('./data'))
+  it('load JSON files and search Fastr index', () => {
+    let fastr = new Fastr('./data')
+    expectSearchToWork(fastr)
+  })
+
+  it('load from array and search Fastr index', () => {    
+    let fastr = new Fastr([loadVideo('--AguZ20lLA'), loadVideo('595M1X2R80A')])
     expectSearchToWork(fastr)
   })
 
   it('load and serialize Fastr index', () => {
-    let fastr = new Fastr(path.resolve('./data'))
+    let fastr = new Fastr('./data')
     expectSearchToWork(fastr)
     fastr.serialize('./serialized')
     fastr = new Fastr('./serialized', true)
@@ -18,6 +23,10 @@ describe('Fastr.ts', () => {
   })
 
 })
+
+function loadVideo(id: string) {
+  return JSON.parse(fs.readFileSync(`./data/${id}.json`).toString())
+}
 
 function expectSearchToWork(fastr: Fastr) {
   let results = fastr.search('GraphQL', {}, 'title')
