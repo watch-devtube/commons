@@ -27,6 +27,33 @@ describe('Fastr.ts', () => {
     expectSearchToWork(fastr)
   })
 
+  it('build partial Fastr index', () => {
+    
+    let fastr = new Fastr({ dataDir: './data', buildOnly: "loki" })
+
+    // Lunr search does NOT work
+    let results = fastr.search('GraphQL', {}, 'title')    
+    expect(results).toBeTruthy()
+    expect(results.length).toEqual(0)
+    
+    // Loki search works
+    let channels = fastr.searchChannels()
+    expect(channels).toBeTruthy()
+    expect(channels.length).toBeGreaterThan(0)
+
+    fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
+
+    // Lunr search works
+    results = fastr.search('GraphQL', {}, 'title')
+    expect(results).toBeTruthy()
+    expect(results.length).toBeGreaterThan(0)
+
+    // Loki search does NOT work
+    channels = fastr.searchChannels()
+    expect(channels).toBeTruthy()
+    expect(channels.length).toEqual(0)
+  })
+
 })
 
 function loadVideo(id: string) {

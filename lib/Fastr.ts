@@ -68,9 +68,11 @@ export default class Fastr {
       } else {
         throw { message: "Neither 'dataDir' nor 'docs' are specified!" }        
       }
+      this.initLokiCollections()
       if (options.buildOnly === "lunr") {
         this.buildLunrIndex(docs)
       } else if (options.buildOnly === "loki") {
+        this.buildLunrIndex([])
         this.buildLokiIndex(docs)
       } else {
         this.buildLunrIndex(docs)
@@ -105,7 +107,6 @@ export default class Fastr {
   }
 
   private buildLokiIndex(docs: Video[]) {
-    this.initLokiCollections()
     docs.forEach(video => {
 
       if (video.speaker && !this.speakers.by("twitter", video.speaker.twitter)) {
