@@ -41,6 +41,11 @@ describe('Fastr.ts', () => {
     expect(channels).toBeTruthy()
     expect(channels.length).toBeGreaterThan(0)
 
+    let serialized = fastr.serialize()
+    expect(serialized).toBeTruthy()
+    expect(serialized.lunr.length).toBeLessThan(150) // empty
+    expect(serialized.loki.length).toBeGreaterThan(3100) // non-empty
+
     fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
 
     // Lunr search works
@@ -52,6 +57,12 @@ describe('Fastr.ts', () => {
     channels = fastr.searchChannels()
     expect(channels).toBeTruthy()
     expect(channels.length).toEqual(0)
+
+    serialized = fastr.serialize()
+    expect(serialized).toBeTruthy()
+    expect(serialized.lunr.length).toBeGreaterThan(150) // non-empty
+    expect(serialized.loki.length).toBeLessThan(3100) // empty
+
   })
 
 })
