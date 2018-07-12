@@ -5,20 +5,25 @@ import Fastr from '../Fastr'
 describe('Fastr.ts', () => {
 
   it('load JSON files and search Fastr index', () => {
-    let fastr = new Fastr('./data')
+    let fastr = new Fastr({ dataDir: './data' })
     expectSearchToWork(fastr)
   })
 
   it('load from array and search Fastr index', () => {    
-    let fastr = new Fastr([loadVideo('--AguZ20lLA'), loadVideo('595M1X2R80A')])
+    let fastr = new Fastr({ 
+      documents: [
+        loadVideo('--AguZ20lLA'), 
+        loadVideo('595M1X2R80A')
+      ] 
+    })
     expectSearchToWork(fastr)
   })
 
   it('load and serialize Fastr index', () => {
-    let fastr = new Fastr('./data')
+    let fastr = new Fastr({ dataDir: './data' })
     expectSearchToWork(fastr)
-    fastr.serialize('./serialized')
-    fastr = new Fastr('./serialized', true)
+    fastr.serializeToDir('./serialized')
+    fastr = new Fastr({ dataDir: './serialized', serialized: true })
     expectSearchToWork(fastr)
   })
 
@@ -41,5 +46,4 @@ function expectSearchToWork(fastr: Fastr) {
   let channels = fastr.searchChannels()
   expect(channels).toBeTruthy()
   expect(channels.length).toBeGreaterThan(0)
-
 }

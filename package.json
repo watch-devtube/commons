@@ -9,7 +9,7 @@
   "scripts": {
     "test": "jest",
     "clean": "rimraf dist",
-    "compile": "tsc"
+    "compile": "rimraf dist && tsc"
   },
   "files": [
     "dist/"
