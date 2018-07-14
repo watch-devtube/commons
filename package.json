@@ -19,7 +19,9 @@
     "lodash": "^4.17.4",
     "lunr": "^2.3.0",
     "lokijs": "^1.5.5",
-    "thenby": "^1.2.6"
+    "thenby": "^1.2.6",
+    "@google-cloud/storage": "^1.7.0",
+    "@google-cloud/pubsub": "^0.18.0"
   },
   "jest": {
     "transform": {
@@ -36,6 +38,8 @@
     ]
   },
   "devDependencies": {
+    "@types/google-cloud__storage": "^1.1.7",
+    "@types/google-cloud__pubsub": "^0.18.0",
     "@types/lodash": "^4.14.110",
     "@types/lokijs": "^1.5.2",
     "@types/jest": "^22.2.3",
