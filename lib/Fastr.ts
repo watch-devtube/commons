@@ -7,7 +7,7 @@ import * as Loki from 'lokijs'
 import { firstBy } from 'thenby'
 import { Logger } from './Logger'
 
-interface FastrOptions {
+export interface FastrOptions {
   dataDir?: string
   documents?: Video[]
   serialized?: boolean
@@ -16,16 +16,16 @@ interface FastrOptions {
   buildOnly?: "loki" | "lunr"
 }
 
-interface Tag {
+export interface Tag {
   tag: string
 }
 
-interface Channel {
+export interface Channel {
   id: string
   title: string
 }
 
-interface Video {
+export interface Video {
   objectID: string
   title: string
   satisfaction: number
@@ -37,12 +37,12 @@ interface Video {
 
 type VideoProperty = "objectID" | "speaker" | "title" | "tags" | "channelTitle" | "satisfaction" | "channelId" | "$loki" | "meta"
 
-interface Speaker {
+export interface Speaker {
   twitter: string
   name: string
 }
 
-interface SerializedIndex {
+export interface SerializedIndex {
   loki: string
   lunr: string
 }
