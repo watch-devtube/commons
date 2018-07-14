@@ -21,7 +21,11 @@
     "lokijs": "^1.5.5",
     "thenby": "^1.2.6",
     "@google-cloud/storage": "^1.7.0",
-    "@google-cloud/pubsub": "^0.18.0"
+    "@google-cloud/pubsub": "^0.18.0",
+    "@types/google-cloud__storage": "^1.1.7",
+    "@types/google-cloud__pubsub": "^0.18.0",
+    "@types/lodash": "^4.14.110",
+    "@types/lokijs": "^1.5.2"
   },
   "jest": {
     "transform": {
@@ -38,10 +42,6 @@
     ]
   },
   "devDependencies": {
-    "@types/google-cloud__storage": "^1.1.7",
-    "@types/google-cloud__pubsub": "^0.18.0",
-    "@types/lodash": "^4.14.110",
-    "@types/lokijs": "^1.5.2",
     "@types/jest": "^22.2.3",
     "@types/node": "^10.0.3",
     "typescript": "^2.9.2",
