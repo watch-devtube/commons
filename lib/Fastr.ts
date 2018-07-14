@@ -11,6 +11,8 @@ interface FastrOptions {
   dataDir?: string
   documents?: Video[]
   serialized?: boolean
+  lokiData?: string | Buffer
+  lunrData?: string | Buffer
   buildOnly?: "loki" | "lunr"
 }
 
@@ -81,8 +83,11 @@ export default class Fastr {
     } else {
       if (options.dataDir) {
         this.loadIndex(path.resolve(options.dataDir))
+      } else if (options.lokiData || options.lunrData) {
+        this.loadLokiIndex(options.lokiData)
+        this.loadLunrIndex(options.lunrData)
       } else {
-        throw { message: "'dataDir' is not specified!" }
+        throw { message: "Neither 'dataDir' nor 'lokiData' nor 'lunrData' are specified!" }
       }
     }
 
@@ -156,15 +161,24 @@ export default class Fastr {
   }
 
   private loadIndex(dataHome: string) {
+    this.loadLokiIndex(fs.readFileSync(path.join(path.resolve(dataHome), 'loki.json')).toString())
+    this.loadLunrIndex(JSON.parse(fs.readFileSync(path.join(path.resolve(dataHome), 'lunr.json')).toString()))
+  }
 
-    this.loki.loadJSON(fs.readFileSync(path.join(path.resolve(dataHome), 'loki.json')).toString())
-    this.lunr = Lunr.Index.load(JSON.parse(fs.readFileSync(path.join(path.resolve(dataHome), 'lunr.json')).toString()))
-
+  private loadLokiIndex(serializedIndex: string | Buffer) {
+    if (serializedIndex instanceof Buffer) {
+      this.loki.loadJSON(serializedIndex.toString())
+    } else {
+      this.loki.loadJSON(serializedIndex)
+    }    
     this.tags = this.loki.getCollection('tags')
     this.videos = this.loki.getCollection('videos')
     this.speakers = this.loki.getCollection('speakers')
     this.channels = this.loki.getCollection('channels')
+  }
 
+  private loadLunrIndex(serializedIndex: string | Buffer) {
+    this.lunr = Lunr.Index.load(serializedIndex)
   }
 
   serialize(): SerializedIndex {
