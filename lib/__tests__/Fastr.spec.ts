@@ -65,6 +65,19 @@ describe('Fastr.ts', () => {
 
   })
 
+  it('load JSON files, reload JSON files and search Fastr index', () => {
+    let fastr = new Fastr({ dataDir: './data' })
+    fastr.reload({ dataDir: './data' })
+    expectSearchToWork(fastr)
+    fastr.reload({ 
+      documents: [
+        loadVideo('--AguZ20lLA'), 
+        loadVideo('595M1X2R80A')
+      ] 
+    })
+    expectSearchToWork(fastr)
+  })
+
 })
 
 function loadVideo(id: string) {

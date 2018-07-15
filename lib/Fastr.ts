@@ -58,6 +58,10 @@ export default class Fastr {
   private channels: Collection<Channel>
 
   constructor(options: FastrOptions) {
+    this.reload(options)
+  }
+
+  reload(options: FastrOptions) {
 
     this.loki = new Loki('mem.db')
 
