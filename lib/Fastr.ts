@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as Lunr from 'lunr'
 import * as Loki from 'lokijs'
+import * as _ from 'lodash'
 
 import { firstBy } from 'thenby'
 import { Logger } from './Logger'
@@ -18,11 +19,13 @@ export interface FastrOptions {
 
 export interface Tag {
   tag: string
+  videoCount: number
 }
 
 export interface Channel {
   id: string
   title: string
+  videoCount: number
 }
 
 export interface Video {
@@ -40,6 +43,7 @@ type VideoProperty = "objectID" | "speaker" | "title" | "tags" | "channelTitle" 
 export interface Speaker {
   twitter: string
   name: string
+  videoCount: number
 }
 
 export interface SerializedIndex {
@@ -118,22 +122,37 @@ export default class Fastr {
   private buildLokiIndex(docs: Video[]) {
     docs.forEach(video => {
 
-      if (video.speaker && !this.speakers.by("twitter", video.speaker.twitter)) {
-        this.speakers.insert(video.speaker)  
+      if (video.speaker) {
+        let newSpeaker = { twitter: video.speaker.twitter, name: video.speaker.name, videoCount: 1 } as Speaker
+        let existingSpeaker = this.speakers.by("twitter", video.speaker.twitter)
+        if (!existingSpeaker) {
+          this.speakers.insert(newSpeaker)
+        } else {
+          existingSpeaker.videoCount = existingSpeaker.videoCount + 1
+          this.speakers.update(existingSpeaker)
+        }
       }
 
-      if (!this.channels.by("id", video.channelId)) {
-        this.channels.insert({
-          id: video.channelId,
-          title: video.channelTitle
-        })
+      if (video.channelId) {
+        let newChannel = { id: video.channelId, title: video.channelTitle, videoCount: 1 } as Channel
+        let existingChannel = this.channels.by("id", video.channelId)
+        if (!existingChannel) {
+          this.channels.insert(newChannel)
+        } else {
+          existingChannel.videoCount = existingChannel.videoCount + 1
+          this.channels.update(existingChannel)
+        }
       }
 
       if (video.tags) {
         video.tags.forEach(tag => {
-          let lokiTag = { tag: tag }
-          if (!this.tags.findObject(lokiTag)) {
-            this.tags.insert(lokiTag)
+          let newTag = { tag: tag, videoCount: 1 }
+          let existingTag = this.tags.by("tag", tag)
+          if (!existingTag) {
+            this.tags.insert(newTag)
+          } else {
+            existingTag.videoCount = existingTag.videoCount + 1
+            this.tags.update(existingTag)  
           }
         })
       }
@@ -202,19 +221,19 @@ export default class Fastr {
     fs.writeFileSync(path.join(absDir, 'lunr.json'), index.lunr)
   }
 
-  searchChannels() {
-    return this.channels.chain().simplesort('title').data().map(this.stripMetadata)
+  searchChannels(): Channel[] {
+    return this.channels.chain().simplesort('videoCount').data().map(this.stripMetadata)
   }
 
-  searchTags() {
-    return this.tags.chain().simplesort('tag').data().map(t => t.tag)
+  searchTags(): Tag[] {
+    return this.tags.chain().simplesort('videoCount').data().map(this.stripMetadata)
   }
 
-  searchSpeakers() {
-    return this.speakers.chain().simplesort('name').data().map(this.stripMetadata)
+  searchSpeakers(): Speaker[] {
+    return this.speakers.chain().simplesort('videoCount').data().map(this.stripMetadata)
   }
 
-  search(query: string, refinement = {}, sortProperty: VideoProperty) {
+  search(query: string, refinement = {}, sortProperty: VideoProperty): Video[] {
     if (query) {
       return this.searchInLunr(query, sortProperty)
     } else {
@@ -222,7 +241,7 @@ export default class Fastr {
     }
   }
 
-  private searchInLoki(refinement = {}, sortProperty: VideoProperty) {
+  private searchInLoki(refinement = {}, sortProperty: VideoProperty): Video[] {
     let descending = true
     return this.videos
       .chain()
@@ -231,7 +250,7 @@ export default class Fastr {
       .data()
   }
 
-  private searchInLunr(query: string, sortProperty: string) {
+  private searchInLunr(query: string, sortProperty: string): Video[] {
     let hits = this.lunr.search(query)
     let hitsTotal = hits.length
     return hits
@@ -239,7 +258,7 @@ export default class Fastr {
       .sort(firstBy(sortProperty, -1))
   }
 
-  private stripMetadata(lokiRecord: (Video | Channel | Tag | Speaker) & LokiObj) {
+  private stripMetadata<T>(lokiRecord: T & LokiObj): T {
     const cleanRecord = Object.assign({}, lokiRecord)
     delete cleanRecord['meta']
     delete cleanRecord['$loki']

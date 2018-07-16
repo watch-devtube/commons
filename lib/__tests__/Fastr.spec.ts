@@ -91,10 +91,19 @@ function expectSearchToWork(fastr: Fastr) {
   let tags = fastr.searchTags()
   expect(tags).toBeTruthy()
   expect(tags.length).toBeGreaterThan(0)
+  tags.forEach(tag => {
+    expect(tag.videoCount).toBeGreaterThan(0)
+  })
   let speakers = fastr.searchSpeakers()
   expect(speakers).toBeTruthy()
   expect(speakers.length).toBeGreaterThan(0)
+  speakers.forEach(speaker => {
+    expect(speaker.videoCount).toBeGreaterThan(0)
+  })
   let channels = fastr.searchChannels()
   expect(channels).toBeTruthy()
   expect(channels.length).toBeGreaterThan(0)
+  channels.forEach(channel => {
+    expect(channel.videoCount).toBeGreaterThan(0)
+  })
 }
