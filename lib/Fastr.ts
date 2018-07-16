@@ -222,15 +222,15 @@ export default class Fastr {
   }
 
   searchChannels(): Channel[] {
-    return this.channels.chain().simplesort('videoCount').data().map(this.stripMetadata)
+    return this.channels.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
   }
 
   searchTags(): Tag[] {
-    return this.tags.chain().simplesort('videoCount').data().map(this.stripMetadata)
+    return this.tags.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
   }
 
   searchSpeakers(): Speaker[] {
-    return this.speakers.chain().simplesort('videoCount').data().map(this.stripMetadata)
+    return this.speakers.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
   }
 
   search(query: string, refinement = {}, sortProperty: VideoProperty): Video[] {
