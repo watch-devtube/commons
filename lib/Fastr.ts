@@ -230,7 +230,7 @@ export default class Fastr {
   }
 
   private loadLunrIndex(serializedIndex: string | Buffer) {
-    Logger.time(`Loading Lunr data`)
+    Logger.time(`Loading Lunr data from string`)
     this.lunr = Lunr.Index.load(serializedIndex)
     Logger.timeEnd(`Loading Lunr data from string`)
   }
