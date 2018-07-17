@@ -37,14 +37,14 @@ describe('Fastr.ts', () => {
     expect(results.length).toEqual(0)
     
     // Loki search works
-    let channels = fastr.searchChannels()
+    let channels = fastr.listChannels()
     expect(channels).toBeTruthy()
     expect(channels.length).toBeGreaterThan(0)
 
     let serialized = fastr.serialize()
     expect(serialized).toBeTruthy()
     expect(serialized.lunr.length).toBeLessThan(150) // empty
-    expect(serialized.loki.length).toBeGreaterThan(3100) // non-empty
+    expect(serialized.loki.length).toBeGreaterThan(3150) // non-empty
 
     fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
 
@@ -54,14 +54,14 @@ describe('Fastr.ts', () => {
     expect(results.length).toBeGreaterThan(0)
 
     // Loki search does NOT work
-    channels = fastr.searchChannels()
+    channels = fastr.listChannels()
     expect(channels).toBeTruthy()
     expect(channels.length).toEqual(0)
 
     serialized = fastr.serialize()
     expect(serialized).toBeTruthy()
     expect(serialized.lunr.length).toBeGreaterThan(150) // non-empty
-    expect(serialized.loki.length).toBeLessThan(3100) // empty
+    expect(serialized.loki.length).toBeLessThan(3150) // empty
 
   })
 
@@ -88,19 +88,19 @@ function expectSearchToWork(fastr: Fastr) {
   let results = fastr.search('GraphQL', {}, 'title')
   expect(results).toBeTruthy()
   expect(results.length).toBeGreaterThan(0)
-  let tags = fastr.searchTags()
+  let tags = fastr.listTags()
   expect(tags).toBeTruthy()
   expect(tags.length).toBeGreaterThan(0)
   tags.forEach(tag => {
     expect(tag.videoCount).toBeGreaterThan(0)
   })
-  let speakers = fastr.searchSpeakers()
+  let speakers = fastr.listSpeakers()
   expect(speakers).toBeTruthy()
   expect(speakers.length).toBeGreaterThan(0)
   speakers.forEach(speaker => {
     expect(speaker.videoCount).toBeGreaterThan(0)
   })
-  let channels = fastr.searchChannels()
+  let channels = fastr.listChannels()
   expect(channels).toBeTruthy()
   expect(channels.length).toBeGreaterThan(0)
   channels.forEach(channel => {

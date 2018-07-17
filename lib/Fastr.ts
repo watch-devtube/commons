@@ -3,7 +3,6 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as Lunr from 'lunr'
 import * as Loki from 'lokijs'
-import * as _ from 'lodash'
 
 import { firstBy } from 'thenby'
 import { Logger } from './Logger'
@@ -32,6 +31,8 @@ export interface Video {
   objectID: string
   title: string
   satisfaction: number
+  creationDate: number
+  recordingDate: number
   speaker: Speaker
   channelId: string
   channelTitle: string
@@ -66,8 +67,10 @@ export default class Fastr {
   }
 
   reload(options: FastrOptions) {
-
-    this.loki = new Loki('mem.db')
+    
+    Logger.time('Create empty Loki database')
+    this.loki = new Loki('mem.db', { adapter: new Loki.LokiMemoryAdapter() })
+    Logger.timeEnd('Create empty Loki database')
 
     if (!options.serialized) {
       let docs
@@ -77,7 +80,7 @@ export default class Fastr {
         docs = options.documents
       } else {
         throw { message: "Neither 'dataDir' nor 'docs' are specified!" }        
-      }
+      }      
       this.initLokiCollections()
       if (options.buildOnly === "lunr") {
         this.buildLunrIndex(docs)
@@ -103,6 +106,8 @@ export default class Fastr {
 
   private buildLunrIndex(docs: Video[]) {
 
+    Logger.time('Populate Lunr index')
+
     let builder = new Lunr.Builder()
 
     builder.pipeline.remove(Lunr.trimmer)
@@ -113,13 +118,20 @@ export default class Fastr {
     builder.field('tags', { extractor: (doc) => doc.tags ? doc.tags.join(' ') : doc.tags })
     builder.field('channelTitle')
 
+    Logger.time('Add all documents to Lunr index')
     docs.forEach(video => builder.add(video))
+    Logger.timeEnd('Add all documents to Lunr index')
     
+    Logger.time('Build Lunr index')
     this.lunr = builder.build()
+    Logger.timeEnd('Build Lunr index')
+
+    Logger.timeEnd('Populate Lunr index')
 
   }
 
   private buildLokiIndex(docs: Video[]) {
+    Logger.time('Populate Loki database')
     docs.forEach(video => {
 
       if (video.speaker) {
@@ -160,48 +172,67 @@ export default class Fastr {
       this.videos.insert(video)
 
     })
+    Logger.timeEnd('Populate Loki database')
   }
 
   private initLokiCollections() {
 
+    Logger.time(`Creating empty video collection`)
     this.videos = this.loki.addCollection(`videos`, { 
       unique: ['objectID'],
       indices: ['satisfaction']
     })
+    Logger.timeEnd(`Creating empty video collection`)
 
+    Logger.time(`Creating empty speakers collection`)
     this.speakers = this.loki.addCollection(`speakers`, { 
       unique: ['twitter']
     })
+    Logger.timeEnd(`Creating empty speakers collection`)
 
+    Logger.time(`Creating empty channels collection`)
     this.channels = this.loki.addCollection(`channels`, { 
       unique: ['id']
     })    
+    Logger.timeEnd(`Creating empty channels collection`)
 
+    Logger.time(`Creating empty tags collection`)
     this.tags = this.loki.addCollection(`tags`, { 
       unique: ['tag']
     })
+    Logger.timeEnd(`Creating empty tags collection`)
 
   }
 
   private loadIndex(dataHome: string) {
+    Logger.time(`Loading Loki and Lunr data from ${dataHome}`)
     this.loadLokiIndex(fs.readFileSync(path.join(path.resolve(dataHome), 'loki.json')).toString())
     this.loadLunrIndex(JSON.parse(fs.readFileSync(path.join(path.resolve(dataHome), 'lunr.json')).toString()))
+    Logger.timeEnd(`Loading Loki and Lunr data from ${dataHome}`)
   }
 
   private loadLokiIndex(serializedIndex: string | Buffer) {
     if (serializedIndex instanceof Buffer) {
+      Logger.time(`Loading Loki data from Buffer`)
       this.loki.loadJSON(serializedIndex.toString())
+      Logger.timeEnd(`Loading Loki data from Buffer`)
     } else {
+      Logger.time(`Loading Loki data from string`)
       this.loki.loadJSON(serializedIndex)
+      Logger.timeEnd(`Loading Loki data from string`)
     }    
+    Logger.time(`Retrieving Loki collections`)
     this.tags = this.loki.getCollection('tags')
     this.videos = this.loki.getCollection('videos')
     this.speakers = this.loki.getCollection('speakers')
     this.channels = this.loki.getCollection('channels')
+    Logger.timeEnd(`Retrieving Loki collections`)
   }
 
   private loadLunrIndex(serializedIndex: string | Buffer) {
+    Logger.time(`Loading Lunr data`)
     this.lunr = Lunr.Index.load(serializedIndex)
+    Logger.timeEnd(`Loading Lunr data from string`)
   }
 
   serialize(): SerializedIndex {
@@ -221,16 +252,23 @@ export default class Fastr {
     fs.writeFileSync(path.join(absDir, 'lunr.json'), index.lunr)
   }
 
-  searchChannels(): Channel[] {
+  listChannels(): Channel[] {
     return this.channels.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
   }
 
-  searchTags(): Tag[] {
+  listTags(): Tag[] {
     return this.tags.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
   }
 
-  searchSpeakers(): Speaker[] {
+  listSpeakers(): Speaker[] {
     return this.speakers.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
+  }
+
+  listLatestVideos(): Video[] {
+    const day = 24 * 60 * 60
+    const today = Math.floor(Date.now() / 1000)
+    const twoDaysOld = today - 2 * day
+    return this.videos.chain().find({ 'creationDate': { '$gte': twoDaysOld } }).simplesort('creationDate', true).data().map(this.stripMetadata)
   }
 
   search(query: string, refinement = {}, sortProperty: VideoProperty): Video[] {
@@ -268,11 +306,13 @@ export default class Fastr {
   private listDocuments(dataHome: string): Video[] {    
     
     Logger.info(`Loading .json docs from dir ${dataHome}`)
-    
+    Logger.time(`Loading .json docs from dir ${dataHome}`)
+
     let docs = this.walkDirSync(dataHome)
       .filter(f => f.endsWith('.json'))
       .map(f => JSON.parse(fs.readFileSync(f).toString()))
     
+    Logger.timeEnd(`Loading .json docs from dir ${dataHome}`)      
     Logger.info(`${docs.length} docs loaded`)
     
     return docs    
