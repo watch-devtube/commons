@@ -206,8 +206,8 @@ export default class Fastr {
 
   private loadIndex(dataHome: string) {
     Logger.time(`Loading Loki and Lunr data from ${dataHome}`)
-    this.loadLokiIndex(fs.readFileSync(path.join(path.resolve(dataHome), 'loki.json')).toString())
-    this.loadLunrIndex(JSON.parse(fs.readFileSync(path.join(path.resolve(dataHome), 'lunr.json')).toString()))
+    this.loadLokiIndex(fs.readFileSync(path.join(path.resolve(dataHome), 'loki.json')))
+    this.loadLunrIndex(fs.readFileSync(path.join(path.resolve(dataHome), 'lunr.json')))
     Logger.timeEnd(`Loading Loki and Lunr data from ${dataHome}`)
   }
 
