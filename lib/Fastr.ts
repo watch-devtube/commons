@@ -229,10 +229,10 @@ export default class Fastr {
     Logger.timeEnd(`Retrieving Loki collections`)
   }
 
-  private loadLunrIndex(serializedIndex: string | Buffer) {
-    Logger.time(`Loading Lunr data from string`)
-    this.lunr = Lunr.Index.load(serializedIndex)
-    Logger.timeEnd(`Loading Lunr data from string`)
+  private loadLunrIndex(serializedIndex: Buffer) {
+    Logger.time(`Loading Lunr data`)
+    this.lunr = Lunr.Index.load(JSON.parse(serializedIndex.toString()))
+    Logger.timeEnd(`Loading Lunr data`)
   }
 
   serialize(): SerializedIndex {
