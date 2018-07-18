@@ -271,29 +271,32 @@ export default class Fastr {
     return this.videos.chain().find({ 'creationDate': { '$gte': twoDaysOld } }).simplesort('creationDate', true).data().map(this.stripMetadata)
   }
 
-  search(query: string, refinement = {}, sortProperty: VideoProperty): Video[] {
+  search(query: string, refinement = {}, sorting: string): Video[] {
     if (query) {
-      return this.searchInLunr(query, sortProperty)
+      return this.searchInLunr(query, sorting)
     } else {
-      return this.searchInLoki(refinement, sortProperty)
+      return this.searchInLoki(refinement, sorting)
     }
   }
 
-  private searchInLoki(refinement = {}, sortProperty: VideoProperty): Video[] {
-    let descending = true
-    return this.videos
-      .chain()
-      .find(refinement)
-      .simplesort(sortProperty, descending)
-      .data()
-  }
-
-  private searchInLunr(query: string, sortProperty: string): Video[] {
+  private searchInLunr(query: string, sorting: string): Video[] {
+    let order = sorting.startsWith("-") ? -1 : 1
+    let property = sorting.replace("-", "") as VideoProperty
     let hits = this.lunr.search(query)
     let hitsTotal = hits.length
     return hits
       .map(hit => this.videos.by("objectID", hit.ref))
-      .sort(firstBy(sortProperty, -1))
+      .sort(firstBy(property, order))
+  }
+
+  private searchInLoki(refinement = {}, sorting: string): Video[] {
+    let descending = sorting.startsWith("-")
+    let property = sorting.replace("-", "") as VideoProperty
+    return this.videos
+      .chain()
+      .find(refinement)
+      .simplesort(property, descending)
+      .data()
   }
 
   private stripMetadata<T>(lokiRecord: T & LokiObj): T {
