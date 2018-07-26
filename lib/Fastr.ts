@@ -173,8 +173,8 @@ export default class Fastr {
       }
 
       if (video.tags) {
-        let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
         video.tags.forEach(tag => {
+          let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
           let newTag = { tag: tag, videos: videoStats } as Tag
           let existingTag = this.tags.by("tag", tag)
           if (!existingTag) {
