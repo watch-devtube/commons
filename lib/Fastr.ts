@@ -24,7 +24,7 @@ export interface VideoStats {
 
 export interface Tag {
   tag: string
-  videos: VideoStats
+  videos: VideoStats 
 }
 
 export interface Channel {
@@ -146,8 +146,6 @@ export default class Fastr {
       let videoAgeInDays = (now - video.creationDate) / (60 * 60 * 24)
       let isNew = videoAgeInDays <= 7
       let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
-
-      console.log(isNew)
 
       if (video.speaker) {
         let newSpeaker = { twitter: video.speaker.twitter, name: video.speaker.name, videos: videoStats} as Speaker
@@ -273,7 +271,7 @@ export default class Fastr {
   listChannels(): Channel[] {
     return this.channels
       .chain()
-      .compoundsort([["videos.new", true], ["videos.total", true]])
+      .compoundsort([<any>["videos.new", true], ["videos.total", true]])
       .data()
       .map(this.stripMetadata)
   }
@@ -281,7 +279,7 @@ export default class Fastr {
   listTags(): Tag[] {
     return this.tags
       .chain()
-      .compoundsort([["videos.new", true], ["videos.total", true]])
+      .compoundsort([<any>["videos.new", true], ["videos.total", true]])
       .data()
       .map(this.stripMetadata)
   }
@@ -289,7 +287,7 @@ export default class Fastr {
   listSpeakers(): Speaker[] {
     return this.speakers
       .chain()
-      .compoundsort([["videos.new", true], ["videos.total", true]])
+      .compoundsort([<any>["videos.new", true], ["videos.total", true]])
       .data()
       .map(this.stripMetadata)
   }
