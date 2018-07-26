@@ -9,6 +9,7 @@ import { Logger } from './Logger'
 
 export interface FastrOptions {
   dataDir?: string
+  today?: Date
   documents?: Video[]
   serialized?: boolean
   lokiData?: string | Buffer
@@ -16,15 +17,20 @@ export interface FastrOptions {
   buildOnly?: "loki" | "lunr"
 }
 
+export interface VideoStats {
+  new: number
+  total: number
+}
+
 export interface Tag {
   tag: string
-  videoCount: number
+  videos: VideoStats
 }
 
 export interface Channel {
   id: string
   title: string
-  videoCount: number
+  videos: VideoStats
 }
 
 export interface Video {
@@ -44,7 +50,7 @@ type VideoProperty = "objectID" | "speaker" | "title" | "tags" | "channelTitle" 
 export interface Speaker {
   twitter: string
   name: string
-  videoCount: number
+  videos: VideoStats
 }
 
 export interface SerializedIndex {
@@ -54,6 +60,7 @@ export interface SerializedIndex {
 
 export default class Fastr {
 
+  private today: Date
   private loki: Loki
   private lunr: Lunr.Index
 
@@ -63,6 +70,7 @@ export default class Fastr {
   private channels: Collection<Channel>
 
   constructor(options: FastrOptions) {
+    this.today = options.today || new Date()
     this.reload(options)
   }
 
@@ -134,36 +142,46 @@ export default class Fastr {
     Logger.time('Populate Loki database')
     docs.forEach(video => {
 
+      let now = this.today.getTime() / 1000
+      let videoAgeInDays = (now - video.creationDate) / (60 * 60 * 24)
+      let isNew = videoAgeInDays <= 7
+      let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
+
+      console.log(isNew)
+
       if (video.speaker) {
-        let newSpeaker = { twitter: video.speaker.twitter, name: video.speaker.name, videoCount: 1 } as Speaker
+        let newSpeaker = { twitter: video.speaker.twitter, name: video.speaker.name, videos: videoStats} as Speaker
         let existingSpeaker = this.speakers.by("twitter", video.speaker.twitter)
         if (!existingSpeaker) {
           this.speakers.insert(newSpeaker)
         } else {
-          existingSpeaker.videoCount = existingSpeaker.videoCount + 1
+          existingSpeaker.videos.total = existingSpeaker.videos.total + 1
+          existingSpeaker.videos.new = existingSpeaker.videos.new + (isNew ? 1 : 0)
           this.speakers.update(existingSpeaker)
         }
       }
 
       if (video.channelId) {
-        let newChannel = { id: video.channelId, title: video.channelTitle, videoCount: 1 } as Channel
+        let newChannel = { id: video.channelId, title: video.channelTitle, videos: videoStats } as Channel
         let existingChannel = this.channels.by("id", video.channelId)
         if (!existingChannel) {
           this.channels.insert(newChannel)
         } else {
-          existingChannel.videoCount = existingChannel.videoCount + 1
+          existingChannel.videos.total = existingChannel.videos.total + 1
+          existingChannel.videos.new = existingChannel.videos.new + (isNew ? 1 : 0)
           this.channels.update(existingChannel)
         }
       }
 
       if (video.tags) {
         video.tags.forEach(tag => {
-          let newTag = { tag: tag, videoCount: 1 }
+          let newTag = { tag: tag, videos: videoStats } as Tag
           let existingTag = this.tags.by("tag", tag)
           if (!existingTag) {
             this.tags.insert(newTag)
           } else {
-            existingTag.videoCount = existingTag.videoCount + 1
+            existingTag.videos.total = existingTag.videos.total + 1
+            existingTag.videos.new = existingTag.videos.new + (isNew ? 1 : 0)
             this.tags.update(existingTag)  
           }
         })
@@ -253,15 +271,27 @@ export default class Fastr {
   }
 
   listChannels(): Channel[] {
-    return this.channels.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
+    return this.channels
+      .chain()
+      .compoundsort([["videos.new", true], ["videos.total", true]])
+      .data()
+      .map(this.stripMetadata)
   }
 
   listTags(): Tag[] {
-    return this.tags.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
+    return this.tags
+      .chain()
+      .compoundsort([["videos.new", true], ["videos.total", true]])
+      .data()
+      .map(this.stripMetadata)
   }
 
   listSpeakers(): Speaker[] {
-    return this.speakers.chain().simplesort('videoCount', true).data().map(this.stripMetadata)
+    return this.speakers
+      .chain()
+      .compoundsort([["videos.new", true], ["videos.total", true]])
+      .data()
+      .map(this.stripMetadata)
   }
 
   listLatestVideos(): Video[] {

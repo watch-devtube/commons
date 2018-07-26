@@ -66,7 +66,7 @@ describe('Fastr.ts', () => {
   })
 
   it('load JSON files, reload JSON files and search Fastr index', () => {
-    let fastr = new Fastr({ dataDir: './data' })
+    let fastr = new Fastr({ dataDir: './data')
     fastr.reload({ dataDir: './data' })
     expectSearchToWork(fastr)
     fastr.reload({ 
@@ -92,18 +92,18 @@ function expectSearchToWork(fastr: Fastr) {
   expect(tags).toBeTruthy()
   expect(tags.length).toBeGreaterThan(0)
   tags.forEach(tag => {
-    expect(tag.videoCount).toBeGreaterThan(0)
+    expect(tag.videos.total).toBeGreaterThan(0)
   })
   let speakers = fastr.listSpeakers()
   expect(speakers).toBeTruthy()
   expect(speakers.length).toBeGreaterThan(0)
   speakers.forEach(speaker => {
-    expect(speaker.videoCount).toBeGreaterThan(0)
+    expect(speaker.videos.total).toBeGreaterThan(0)
   })
   let channels = fastr.listChannels()
   expect(channels).toBeTruthy()
   expect(channels.length).toBeGreaterThan(0)
   channels.forEach(channel => {
-    expect(channel.videoCount).toBeGreaterThan(0)
+    expect(channel.videos.total).toBeGreaterThan(0)
   })
 }
