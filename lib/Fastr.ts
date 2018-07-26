@@ -145,9 +145,9 @@ export default class Fastr {
       let now = this.today.getTime() / 1000
       let videoAgeInDays = (now - video.creationDate) / (60 * 60 * 24)
       let isNew = videoAgeInDays <= 7
-      let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
-
+      
       if (video.speaker) {
+        let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
         let newSpeaker = { twitter: video.speaker.twitter, name: video.speaker.name, videos: videoStats} as Speaker
         let existingSpeaker = this.speakers.by("twitter", video.speaker.twitter)
         if (!existingSpeaker) {
@@ -160,6 +160,7 @@ export default class Fastr {
       }
 
       if (video.channelId) {
+        let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
         let newChannel = { id: video.channelId, title: video.channelTitle, videos: videoStats } as Channel
         let existingChannel = this.channels.by("id", video.channelId)
         if (!existingChannel) {
@@ -172,6 +173,7 @@ export default class Fastr {
       }
 
       if (video.tags) {
+        let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
         video.tags.forEach(tag => {
           let newTag = { tag: tag, videos: videoStats } as Tag
           let existingTag = this.tags.by("tag", tag)
