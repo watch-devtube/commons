@@ -66,7 +66,7 @@ describe('Fastr.ts', () => {
   })
 
   it('load JSON files, reload JSON files and search Fastr index', () => {
-    let fastr = new Fastr({ dataDir: './data')
+    let fastr = new Fastr({ dataDir: './data' })
     fastr.reload({ dataDir: './data' })
     expectSearchToWork(fastr)
     fastr.reload({ 
