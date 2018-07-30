@@ -21,6 +21,16 @@ export interface Tag {
   videoCount: number
 }
 
+export interface Language {
+  name: string
+  videoCount: number
+}
+
+export interface Year {
+  year: number
+  videoCount: number
+}
+
 export interface Channel {
   id: string
   title: string
