@@ -23,13 +23,13 @@ export class Logger {
 
   static time(message) {
     if (Logger.enabled) {
-      console.time(`${message}`)
+      console.time(`debug: ${message}`)
     }    
   }
 
   static timeEnd(message) {
     if (Logger.enabled) {
-      console.timeEnd(`${message}`)
+      console.timeEnd(`debug: ${message}`)
     }    
   }
 
