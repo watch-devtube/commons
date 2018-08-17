@@ -8,8 +8,6 @@ export class Dns {
 
   constructor() {
 
-    let algoliaAppId = 'DR90AOGGE9'
-
     let dnsCache = dnscache({
       enable: true,
       ttl: 300,
@@ -23,14 +21,7 @@ export class Dns {
       'www.googleapis.com', 
       'www.google.com', 
       'googleapis.com',
-      'www.googleapis.com',  
-      'www.algolia.com',
-      'algolia.com',  
-      `${algoliaAppId}.algolia.net`,
-      `${algoliaAppId}-dsn.algolia.net`,
-      `${algoliaAppId}-1.algolianet.com`,
-      `${algoliaAppId}-2.algolianet.com`,
-      `${algoliaAppId}-3.algolianet.com`  
+      'www.googleapis.com'
     ]
 
     dnsNames.forEach(dnsName => {
