@@ -22,6 +22,20 @@ export interface VideoStats {
   total: number
 }
 
+export interface Timeline {
+  month: string,
+  year: string,
+  videos: number
+}
+
+export interface SpeakerStats {
+  timeline: Timeline,
+  likes: number,
+  views: number,
+  stageMinutes: number,
+  reputation: number
+}
+
 export interface Tag {
   tag: string
   videos: VideoStats 
