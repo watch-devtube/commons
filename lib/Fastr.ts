@@ -66,7 +66,7 @@ export interface Video {
   speaker: Speaker
   channelId: string
   channelTitle: string
-  language: string,
+  language: string
   tags: string[]
 }
 
