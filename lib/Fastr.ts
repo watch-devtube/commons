@@ -66,10 +66,11 @@ export interface Video {
   speaker: Speaker
   channelId: string
   channelTitle: string
+  language: string,
   tags: string[]
 }
 
-type VideoProperty = "objectID" | "speaker" | "title" | "tags" | "channelTitle" | "satisfaction" | "channelId" | "$loki" | "meta"
+type VideoProperty = "objectID" | "speaker" | "language" | "title" | "tags" | "channelTitle" | "satisfaction" | "channelId" | "$loki" | "meta"
 
 export interface Speaker {
   twitter: string
