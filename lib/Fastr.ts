@@ -171,7 +171,7 @@ export default class Fastr {
       let videoAgeInDays = (now - video.creationDate) / (60 * 60 * 24)
       let isNew = videoAgeInDays <= 7
       
-      if (video.speaker) {
+      if (video.speaker && video.speaker.twitter) {
         let videoStats = { total: 1, new: (isNew ? 1 : 0)} as VideoStats
         let newSpeaker = { twitter: video.speaker.twitter, name: video.speaker.name, videos: videoStats} as Speaker
         let existingSpeaker = this.speakers.by("twitter", video.speaker.twitter)
