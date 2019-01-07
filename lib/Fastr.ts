@@ -4,8 +4,8 @@ import * as path from 'path'
 import * as Lunr from 'lunr'
 import * as Loki from 'lokijs'
 
-import { firstBy } from 'thenby'
 import { Logger } from './Logger'
+import { Sorting } from './Sorting'
 
 export interface FastrOptions {
   dataDir?: string
@@ -326,31 +326,26 @@ export default class Fastr {
     return this.videos.chain().find({ 'creationDate': { '$gte': twoDaysOld } }).simplesort('creationDate', true).data().map(this.stripMetadata)
   }
 
-  search(query: string, refinement = {}, sorting: string): Video[] {
+  search(query: string, refinement = {}, sortingSpecs: string[]): Video[] {
     if (query) {
-      return this.searchInLunr(query, sorting)
+      return this.searchInLunr(query, new Sorting(sortingSpecs))
     } else {
-      return this.searchInLoki(refinement, sorting)
+      return this.searchInLoki(refinement, new Sorting(sortingSpecs))
     }
   }
 
-  private searchInLunr(query: string, sorting: string): Video[] {
-    let order = sorting.startsWith("-") ? -1 : 1
-    let property = sorting.replace("-", "") as VideoProperty
+  private searchInLunr(query: string, sorting: Sorting): Video[] {
     let hits = this.lunr.search(query)
-    let hitsTotal = hits.length
     return hits
       .map(hit => this.videos.by("objectID", hit.ref))
-      .sort(firstBy(property, order))
+      .sort(sorting.lunr())
   }
 
-  private searchInLoki(refinement = {}, sorting: string): Video[] {
-    let descending = sorting.startsWith("-")
-    let property = sorting.replace("-", "") as VideoProperty
+  private searchInLoki(refinement = {}, sorting: Sorting): Video[] {
     return this.videos
       .chain()
       .find(refinement)
-      .simplesort(property, descending)
+      .compoundsort(sorting.loki())
       .data()
   }
 

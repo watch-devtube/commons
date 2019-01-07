@@ -1,4 +1,3 @@
-
 import * as _ from 'lodash'
 
 const Storage = require('@google-cloud/storage')

@@ -32,7 +32,7 @@ describe('Fastr.ts', () => {
     let fastr = new Fastr({ dataDir: './data', buildOnly: "loki" })
 
     // Lunr search does NOT work
-    let results = fastr.search('GraphQL', {}, 'title')    
+    let results = fastr.search('GraphQL', {}, ['title'])    
     expect(results).toBeTruthy()
     expect(results.length).toEqual(0)
     
@@ -49,7 +49,7 @@ describe('Fastr.ts', () => {
     fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
 
     // Lunr search works
-    results = fastr.search('GraphQL', {}, 'title')
+    results = fastr.search('GraphQL', {}, ['title'])
     expect(results).toBeTruthy()
     expect(results.length).toBeGreaterThan(0)
 
@@ -85,7 +85,7 @@ function loadVideo(id: string) {
 }
 
 function expectSearchToWork(fastr: Fastr) {
-  let results = fastr.search('GraphQL', {}, 'title')
+  let results = fastr.search('GraphQL', {}, ['title'])
   expect(results).toBeTruthy()
   expect(results.length).toBeGreaterThan(0)
   let tags = fastr.listTags()
