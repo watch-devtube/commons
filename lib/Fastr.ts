@@ -70,7 +70,21 @@ export interface Video {
   tags: string[]
 }
 
-type VideoProperty = "objectID" | "speaker" | "language" | "title" | "tags" | "channelTitle" | "satisfaction" | "channelId" | "$loki" | "meta"
+const allowedFields = [
+  'id', 
+  'objectID', 
+  'title', 
+  'isFeatured', 
+  'channel',
+  'likes',
+  'dislikes',
+  'views',
+  'duration',
+  'recordingDate',
+  'creationDate',
+  'tags',
+  'speaker'
+]
 
 export interface Speaker {
   twitter: string
@@ -212,10 +226,20 @@ export default class Fastr {
         })
       }
 
-      this.videos.insert(video)
+      this.videos.insert(this.filterFields(video))
 
     })
     Logger.timeEnd('Populate Loki database')
+  }
+
+  
+  filterFields = (object: any): any => {
+    Object.keys(object).forEach((field) => {
+      if (allowedFields.indexOf(field) == -1) {
+        delete object[field]
+      }
+    })
+    return object
   }
 
   private initLokiCollections() {
