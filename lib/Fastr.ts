@@ -83,7 +83,9 @@ const allowedFields = [
   'recordingDate',
   'creationDate',
   'tags',
-  'speaker'
+  'speaker',
+  'language',
+  'satisfaction'
 ]
 
 export interface Speaker {
