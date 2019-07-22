@@ -75,7 +75,7 @@ const allowedFields = [
   'objectID', 
   'title', 
   'featured', 
-  'channel',
+  'channelTitle',
   'likes',
   'dislikes',
   'views',
