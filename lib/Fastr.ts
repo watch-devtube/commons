@@ -162,9 +162,9 @@ export default class Fastr {
     builder.pipeline.remove(Lunr.trimmer)
 
     builder.ref('objectID')
-    builder.field('title')
-    builder.field('speaker', { extractor: (doc) => doc.speaker ? doc.speaker.name : doc.speaker })
-    builder.field('tags', { extractor: (doc) => doc.tags ? doc.tags.join(' ') : doc.tags })
+    builder.field('title', { extractor: doc => doc.title.replace(":", " ") })
+    builder.field('speaker', { extractor: doc => doc.speaker ? doc.speaker.name : doc.speaker })
+    builder.field('tags', { extractor: doc => doc.tags ? doc.tags.join(' ') : doc.tags })
     builder.field('channelTitle')
 
     Logger.time('Add all documents to Lunr index')

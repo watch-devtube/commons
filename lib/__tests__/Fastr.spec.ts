@@ -4,6 +4,13 @@ import Fastr from '../Fastr'
 
 describe('Fastr.ts', () => {
 
+  it('finds speakers if a name is followed by colon', () => {
+    const fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
+    const results = fastr.search('Means', {}, ['title'])
+    expect(results).toBeTruthy()
+    expect(results.length).toBeGreaterThan(0)
+  })
+
   it('load JSON files and search Fastr index', () => {
     let fastr = new Fastr({ dataDir: './data' })
     expectSearchToWork(fastr)
