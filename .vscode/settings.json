@@ -4,6 +4,7 @@
   "editor.renderControlCharacters": false,
   "git.enableSmartCommit": true,
   "editor.tabSize": 2,
+  "editor.formatOnSave": true,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
   "cSpell.words": [
