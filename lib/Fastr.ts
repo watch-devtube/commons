@@ -12,6 +12,8 @@ export interface FastrOptions {
   today?: Date;
   documents?: Video[];
   serialized?: boolean;
+  lokiDir?: string;
+  lunrDir?: string;
   lokiData?: string | Buffer;
   lunrData?: string | Buffer;
   buildOnly?: "loki" | "lunr";
@@ -127,6 +129,12 @@ export default class Fastr {
     } else {
       if (options.dataDir) {
         this.loadIndex(path.resolve(options.dataDir));
+      } else if (options.lokiDir) {
+        const lokiData = fs.readFileSync(path.join(path.resolve(options.lokiDir), "loki.json"))
+        this.loadLokiIndex(lokiData);
+      } else if (options.lunrDir) {
+        const lunrData = fs.readFileSync(path.join(path.resolve(options.lunrDir), "lunr.json"))
+        this.loadLunrIndex(lunrData);
       } else if (options.lokiData || options.lunrData) {
         this.loadLokiIndex(options.lokiData);
         this.loadLunrIndex(options.lunrData);
