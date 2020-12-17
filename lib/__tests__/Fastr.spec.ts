@@ -16,12 +16,12 @@ describe('Fastr.ts', () => {
     expectSearchToWork(fastr)
   })
 
-  it('load from array and search Fastr index', () => {    
-    let fastr = new Fastr({ 
+  it('load from array and search Fastr index', () => {
+    let fastr = new Fastr({
       documents: [
-        loadVideo('--AguZ20lLA'), 
+        loadVideo('--AguZ20lLA'),
         loadVideo('595M1X2R80A')
-      ] 
+      ]
     })
     expectSearchToWork(fastr)
   })
@@ -35,14 +35,14 @@ describe('Fastr.ts', () => {
   })
 
   it('build partial Fastr index', () => {
-    
+
     let fastr = new Fastr({ dataDir: './data', buildOnly: "loki" })
 
     // Lunr search does NOT work
-    let results = fastr.search('GraphQL', {}, ['title'])    
+    let results = fastr.search('GraphQL', {}, ['title'])
     expect(results).toBeTruthy()
     expect(results.length).toEqual(0)
-    
+
     // Loki search works
     let channels = fastr.listChannels()
     expect(channels).toBeTruthy()
@@ -76,11 +76,11 @@ describe('Fastr.ts', () => {
     let fastr = new Fastr({ dataDir: './data' })
     fastr.reload({ dataDir: './data' })
     expectSearchToWork(fastr)
-    fastr.reload({ 
+    fastr.reload({
       documents: [
-        loadVideo('--AguZ20lLA'), 
+        loadVideo('--AguZ20lLA'),
         loadVideo('595M1X2R80A')
-      ] 
+      ]
     })
     expectSearchToWork(fastr)
   })
@@ -95,6 +95,11 @@ function expectSearchToWork(fastr: Fastr) {
   let results = fastr.search('GraphQL', {}, ['title'])
   expect(results).toBeTruthy()
   expect(results.length).toBeGreaterThan(0)
+
+  const [firstHit] = results
+  expect(firstHit.speaker).toContain("eduardsi")
+  expect(firstHit.speaker).toContain("codingandrey")
+
   let tags = fastr.listTags()
   expect(tags).toBeTruthy()
   expect(tags.length).toBeGreaterThan(0)
