@@ -371,20 +371,22 @@ export default class Fastr {
 
   search(query: string, refinement = {}, sortingSpecs: string[]): Video[] {
     if (query) {
-      return this.searchInLunr(query, new Sorting(sortingSpecs));
+      return this.searchInLunr(query, sortingSpecs);
     } else {
-      return this.searchInLoki(refinement, new Sorting(sortingSpecs));
+      return this.searchInLoki(refinement, sortingSpecs);
     }
   }
 
-  private searchInLunr(query: string, sorting: Sorting): Video[] {
+  searchInLunr(query: string, sortingSpecs: string[]): Video[] {
+    let sorting = new Sorting(sortingSpecs);
     let hits = this.lunr.search(query);
     return hits
       .map((hit) => this.videos.by("objectID", hit.ref))
       .sort(sorting.lunr());
   }
 
-  private searchInLoki(refinement = {}, sorting: Sorting): Video[] {
+  searchInLoki(refinement = {}, sortingSpecs: string[]): Video[] {
+    let sorting = new Sorting(sortingSpecs);
     return this.videos
       .chain()
       .find(refinement)
