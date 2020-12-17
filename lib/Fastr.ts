@@ -59,20 +59,20 @@ export interface Video {
 }
 
 const allowedFields = [
-  "id",
+  // "id",
   "objectID",
-  "title",
+  // "title",
   "featured",
   "channelTitle",
-  "likes",
-  "dislikes",
-  "views",
-  "duration",
+  // "likes",
+  // "dislikes",
+  // "views",
+  // "duration",
   "recordingDate",
-  "creationDate",
+  // "creationDate",
   "tags",
   "speaker",
-  "language",
+  // "language",
   "satisfaction",
 ];
 
