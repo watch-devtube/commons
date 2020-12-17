@@ -240,9 +240,17 @@ export default class Fastr {
         });
       }
 
+      this.leaveOnlySpeakersTwitter(video);
       this.videos.insert(this.filterFields(video));
     });
     Logger.timeEnd("Populate Loki database");
+  }
+
+  leaveOnlySpeakersTwitter = (object: any): any => {
+    object.speaker = alwaysArray(object.speaker).map(speaker => {
+      delete speaker.name
+      return speaker.twitter
+    })
   }
 
   filterFields = (object: any): any => {
