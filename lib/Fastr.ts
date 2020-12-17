@@ -265,8 +265,7 @@ export default class Fastr {
   private initLokiCollections() {
     Logger.time(`Creating empty video collection`);
     this.videos = this.loki.addCollection(`videos`, {
-      unique: ["objectID"],
-      indices: ["satisfaction"],
+      unique: ["objectID"]
     });
     Logger.timeEnd(`Creating empty video collection`);
 
