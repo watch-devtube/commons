@@ -241,27 +241,6 @@ export default class Fastr {
     fs.writeFileSync(path.join(absDir, "lunr.json"), index.lunr);
   }
 
-
-  listLatestVideos(): Video[] {
-    const day = 24 * 60 * 60;
-    const today = Math.floor(Date.now() / 1000);
-    const twoDaysOld = today - 2 * day;
-    return this.videos
-      .chain()
-      .find({ creationDate: { $gte: twoDaysOld } })
-      .simplesort("creationDate", true)
-      .data()
-      .map(this.stripMetadata);
-  }
-
-  search(query: string, refinement = {}, sortingSpecs: string[]): Video[] {
-    if (query) {
-      return this.searchInLunr(query, sortingSpecs);
-    } else {
-      return this.searchInLoki(refinement, sortingSpecs);
-    }
-  }
-
   searchInLunr(query: string, sortingSpecs: string[]): Video[] {
     let sorting = new Sorting(sortingSpecs);
     let hits = this.lunr.search(query);
