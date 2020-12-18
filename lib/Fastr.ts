@@ -19,30 +19,20 @@ export interface FastrOptions {
   buildOnly?: "loki" | "lunr";
 }
 
-export interface VideoStats {
-  new: number;
-  total: number;
-}
-
-export interface Tag {
-  tag: string;
-  videos: VideoStats;
-}
-
 export interface Language {
   name: string;
   videoCount: number;
 }
 
+export interface Speaker {
+  twitter: string;
+  name: string;
+
+}
+
 export interface Year {
   year: number;
   videoCount: number;
-}
-
-export interface Channel {
-  id: string;
-  title: string;
-  videos: VideoStats;
 }
 
 export interface Video {
@@ -76,29 +66,18 @@ const allowedFields = [
   "satisfaction",
 ];
 
-export interface Speaker {
-  twitter: string;
-  name: string;
-  videos: VideoStats;
-}
-
 export interface SerializedIndex {
   loki: string;
   lunr: string;
 }
 
 export default class Fastr {
-  private today: Date;
   private loki: Loki;
   private lunr: Lunr.Index;
 
-  private tags: Collection<Tag>;
   private videos: Collection<Video>;
-  private speakers: Collection<Speaker>;
-  private channels: Collection<Channel>;
 
   constructor(options: FastrOptions) {
-    this.today = options.today || new Date();
     this.reload(options);
   }
 
@@ -183,63 +162,6 @@ export default class Fastr {
   private buildLokiIndex(docs: Video[]) {
     Logger.time("Populate Loki database");
     docs.forEach((video) => {
-      let now = this.today.getTime() / 1000;
-      let videoAgeInDays = (now - video.creationDate) / (60 * 60 * 24);
-      let isNew = videoAgeInDays <= 7;
-
-      alwaysArray(video.speaker).forEach((speaker) => {
-        if (speaker.twitter) {
-          let videoStats = { total: 1, new: isNew ? 1 : 0 } as VideoStats;
-          let newSpeaker = {
-            twitter: speaker.twitter,
-            name: speaker.name,
-            videos: videoStats,
-          } as Speaker;
-          let existingSpeaker = this.speakers.by("twitter", speaker.twitter);
-          if (!existingSpeaker) {
-            this.speakers.insert(newSpeaker);
-          } else {
-            existingSpeaker.videos.total = existingSpeaker.videos.total + 1;
-            existingSpeaker.videos.new =
-              existingSpeaker.videos.new + (isNew ? 1 : 0);
-            this.speakers.update(existingSpeaker);
-          }
-        }
-      });
-
-      if (video.channelId) {
-        let videoStats = { total: 1, new: isNew ? 1 : 0 } as VideoStats;
-        let newChannel = {
-          id: video.channelId,
-          title: video.channelTitle,
-          videos: videoStats,
-        } as Channel;
-        let existingChannel = this.channels.by("id", video.channelId);
-        if (!existingChannel) {
-          this.channels.insert(newChannel);
-        } else {
-          existingChannel.videos.total = existingChannel.videos.total + 1;
-          existingChannel.videos.new =
-            existingChannel.videos.new + (isNew ? 1 : 0);
-          this.channels.update(existingChannel);
-        }
-      }
-
-      if (video.tags) {
-        video.tags.forEach((tag) => {
-          let videoStats = { total: 1, new: isNew ? 1 : 0 } as VideoStats;
-          let newTag = { tag: tag, videos: videoStats } as Tag;
-          let existingTag = this.tags.by("tag", tag);
-          if (!existingTag) {
-            this.tags.insert(newTag);
-          } else {
-            existingTag.videos.total = existingTag.videos.total + 1;
-            existingTag.videos.new = existingTag.videos.new + (isNew ? 1 : 0);
-            this.tags.update(existingTag);
-          }
-        });
-      }
-
       this.leaveOnlySpeakersTwitter(video);
       this.videos.insert(this.filterFields(video));
     });
@@ -268,24 +190,6 @@ export default class Fastr {
       unique: ["objectID"]
     });
     Logger.timeEnd(`Creating empty video collection`);
-
-    Logger.time(`Creating empty speakers collection`);
-    this.speakers = this.loki.addCollection(`speakers`, {
-      unique: ["twitter"],
-    });
-    Logger.timeEnd(`Creating empty speakers collection`);
-
-    Logger.time(`Creating empty channels collection`);
-    this.channels = this.loki.addCollection(`channels`, {
-      unique: ["id"],
-    });
-    Logger.timeEnd(`Creating empty channels collection`);
-
-    Logger.time(`Creating empty tags collection`);
-    this.tags = this.loki.addCollection(`tags`, {
-      unique: ["tag"],
-    });
-    Logger.timeEnd(`Creating empty tags collection`);
   }
 
   private loadIndex(dataHome: string) {
@@ -310,10 +214,7 @@ export default class Fastr {
       Logger.timeEnd(`Loading Loki data from string`);
     }
     Logger.time(`Retrieving Loki collections`);
-    this.tags = this.loki.getCollection("tags");
     this.videos = this.loki.getCollection("videos");
-    this.speakers = this.loki.getCollection("speakers");
-    this.channels = this.loki.getCollection("channels");
     Logger.timeEnd(`Retrieving Loki collections`);
   }
 
@@ -340,29 +241,6 @@ export default class Fastr {
     fs.writeFileSync(path.join(absDir, "lunr.json"), index.lunr);
   }
 
-  listChannels(): Channel[] {
-    return this.channels
-      .chain()
-      .compoundsort([<any>["videos.new", true], ["videos.total", true]])
-      .data()
-      .map(this.stripMetadata);
-  }
-
-  listTags(): Tag[] {
-    return this.tags
-      .chain()
-      .compoundsort([<any>["videos.new", true], ["videos.total", true]])
-      .data()
-      .map(this.stripMetadata);
-  }
-
-  listSpeakers(): Speaker[] {
-    return this.speakers
-      .chain()
-      .compoundsort([<any>["videos.new", true], ["videos.total", true]])
-      .data()
-      .map(this.stripMetadata);
-  }
 
   listLatestVideos(): Video[] {
     const day = 24 * 60 * 60;

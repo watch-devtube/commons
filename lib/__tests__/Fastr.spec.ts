@@ -43,11 +43,6 @@ describe('Fastr.ts', () => {
     expect(results).toBeTruthy()
     expect(results.length).toEqual(0)
 
-    // Loki search works
-    let channels = fastr.listChannels()
-    expect(channels).toBeTruthy()
-    expect(channels.length).toBeGreaterThan(0)
-
     let serialized = fastr.serialize()
     expect(serialized).toBeTruthy()
     expect(serialized.lunr.length).toBeLessThan(150) // empty
@@ -59,11 +54,6 @@ describe('Fastr.ts', () => {
     results = fastr.search('GraphQL', {}, ['title'])
     expect(results).toBeTruthy()
     expect(results.length).toBeGreaterThan(0)
-
-    // Loki search does NOT work
-    channels = fastr.listChannels()
-    expect(channels).toBeTruthy()
-    expect(channels.length).toEqual(0)
 
     serialized = fastr.serialize()
     expect(serialized).toBeTruthy()
@@ -99,23 +89,4 @@ function expectSearchToWork(fastr: Fastr) {
   const [firstHit] = results
   expect(firstHit.speaker).toContain("eduardsi")
   expect(firstHit.speaker).toContain("codingandrey")
-
-  let tags = fastr.listTags()
-  expect(tags).toBeTruthy()
-  expect(tags.length).toBeGreaterThan(0)
-  tags.forEach(tag => {
-    expect(tag.videos.total).toBeGreaterThan(0)
-  })
-  let speakers = fastr.listSpeakers()
-  expect(speakers).toBeTruthy()
-  expect(speakers.length).toBeGreaterThan(0)
-  speakers.forEach(speaker => {
-    expect(speaker.videos.total).toBeGreaterThan(0)
-  })
-  let channels = fastr.listChannels()
-  expect(channels).toBeTruthy()
-  expect(channels.length).toBeGreaterThan(0)
-  channels.forEach(channel => {
-    expect(channel.videos.total).toBeGreaterThan(0)
-  })
 }
