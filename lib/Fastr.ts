@@ -45,7 +45,6 @@ export interface Video {
   channelId: string;
   channelTitle: string;
   language: string;
-  tags: string[];
 }
 
 const allowedFields = [
@@ -60,7 +59,6 @@ const allowedFields = [
   // "duration",
   "recordingDate",
   // "creationDate",
-  "tags",
   "speaker",
   // "language",
   "satisfaction",
@@ -142,9 +140,6 @@ export default class Fastr {
         alwaysArray(doc.speaker)
           .map((it) => it.name)
           .join(" "),
-    });
-    builder.field("tags", {
-      extractor: (doc: Video) => (doc.tags ? doc.tags.join(" ") : doc.tags),
     });
     builder.field("channelTitle");
 
