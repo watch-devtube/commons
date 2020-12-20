@@ -1,90 +1,65 @@
-
+import * as path from "path";
 import * as fs from 'fs'
 import Fastr from '../Fastr'
+import { Video } from '../Fastr'
 
 describe('Fastr.ts', () => {
 
-  it('finds speakers if a name is followed by colon', () => {
-    const fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
+  it("finds videos if speaker's name is followed by a colon", () => {
+    const video = loadVideo('-ES1wlV-8lU')
+    expect(video.title).toEqual("Nickolas Means: The Building Built on Stilts")
+
+    const documents = [video]
+    const fastr = new Fastr({ documents })
     const results = fastr.searchInLunr('Means', ['title'])
-    expect(results).toBeTruthy()
-    expect(results.length).toBeGreaterThan(0)
+    expect(results).toHaveLength(1);
   })
 
-  it('load JSON files and search Fastr index', () => {
-    let fastr = new Fastr({ dataDir: './data' })
-    expectSearchToWork(fastr)
-  })
-
-  it('load from array and search Fastr index', () => {
-    let fastr = new Fastr({
-      documents: [
-        loadVideo('--AguZ20lLA'),
-        loadVideo('595M1X2R80A')
-      ]
-    })
-    expectSearchToWork(fastr)
-  })
-
-  it('load and serialize Fastr index', () => {
-    let fastr = new Fastr({ dataDir: './data' })
-    expectSearchToWork(fastr)
-    fastr.serializeToDir('./serialized')
-    fastr = new Fastr({ dataDir: './serialized', serialized: true })
-    expectSearchToWork(fastr)
-  })
-
-  it('build partial Fastr index', () => {
-
-    let fastr = new Fastr({ dataDir: './data', buildOnly: "loki" })
-
+  it("finds videos with multiple speakers", () => {
+    const video = loadVideo('--AguZ20lLA');
+    const documents = [video]
+    const fastr = new Fastr({ documents })
     let results = fastr.searchInLunr('GraphQL', ['title'])
-    expect(results).toBeTruthy()
-    expect(results.length).toEqual(0)
+    expect(results).toHaveLength(1)
 
-    let serialized = fastr.serialize()
-    expect(serialized).toBeTruthy()
-    expect(serialized.lunr.length).toBeLessThan(150) // empty
-    expect(serialized.loki.length).toBeGreaterThan(3150) // non-empty
-
-    fastr = new Fastr({ dataDir: './data', buildOnly: "lunr" })
-
-    results = fastr.searchInLunr('GraphQL', ['title'])
-    expect(results).toBeTruthy()
-    expect(results.length).toBeGreaterThan(0)
-
-    serialized = fastr.serialize()
-    expect(serialized).toBeTruthy()
-    expect(serialized.lunr.length).toBeGreaterThan(150) // non-empty
-    expect(serialized.loki.length).toBeLessThan(3150) // empty
-
+    const [firstHit] = results
+    expect(firstHit.recordingDate).toEqual(1507536000)
+    expect(firstHit.satisfaction).toEqual(85)
+    expect(firstHit.objectID).toEqual("--AguZ20lLA")
+    expect(firstHit.speaker).toContain("eduardsi")
+    expect(firstHit.speaker).toContain("codingandrey")
   })
 
-  it('load JSON files, reload JSON files and search Fastr index', () => {
-    let fastr = new Fastr({ dataDir: './data' })
-    fastr.reload({ dataDir: './data' })
-    expectSearchToWork(fastr)
-    fastr.reload({
-      documents: [
-        loadVideo('--AguZ20lLA'),
-        loadVideo('595M1X2R80A')
-      ]
-    })
-    expectSearchToWork(fastr)
+  it('returns all serialized videos from loki and lunr', () => {
+    const documents = videos(__dirname + '/data');
+    new Fastr({ documents }).serializeToDir('./serialized')
+
+    const fastr = new Fastr({ dataDir: './serialized' })
+
+    const lokiHits = fastr.searchInLoki({}, ["-featured"])
+    expect(lokiHits).toHaveLength(61)
+
+    const lunrHits = fastr.searchInLunr("", ["-featured"])
+    expect(lunrHits).toHaveLength(61)
   })
 
 })
 
 function loadVideo(id: string) {
-  return JSON.parse(fs.readFileSync(`./data/${id}.json`).toString())
+  return JSON.parse(fs.readFileSync(__dirname + `/data/${id}.json`).toString())
 }
 
-function expectSearchToWork(fastr: Fastr) {
-  let results = fastr.searchInLunr('GraphQL', ['title'])
-  expect(results).toBeTruthy()
-  expect(results.length).toBeGreaterThan(0)
+function videos(dataHome: string): Video[] {
+  return walkDirSync(dataHome)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => JSON.parse(fs.readFileSync(f).toString()))
+}
 
-  const [firstHit] = results
-  expect(firstHit.speaker).toContain("eduardsi")
-  expect(firstHit.speaker).toContain("codingandrey")
+function walkDirSync(dir: string, fileList: string[] = []): string[] {
+  fs.readdirSync(dir).forEach((file) => {
+    fileList = fs.statSync(path.join(dir, file)).isDirectory()
+      ? walkDirSync(path.join(dir, file), fileList)
+      : fileList.concat(path.join(dir, file));
+  });
+  return fileList;
 }

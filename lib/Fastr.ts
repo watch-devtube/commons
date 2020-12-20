@@ -9,14 +9,7 @@ import { alwaysArray } from "./Arrays";
 
 export interface FastrOptions {
   dataDir?: string;
-  today?: Date;
   documents?: Video[];
-  serialized?: boolean;
-  lokiDir?: string;
-  lunrDir?: string;
-  lokiData?: string | Buffer;
-  lunrData?: string | Buffer;
-  buildOnly?: "loki" | "lunr";
 }
 
 export interface Language {
@@ -27,7 +20,6 @@ export interface Language {
 export interface Speaker {
   twitter: string;
   name: string;
-
 }
 
 export interface Year {
@@ -48,19 +40,11 @@ export interface Video {
 }
 
 const allowedFields = [
-  // "id",
   "objectID",
-  // "title",
   "featured",
   "channelTitle",
-  // "likes",
-  // "dislikes",
-  // "views",
-  // "duration",
   "recordingDate",
-  // "creationDate",
   "speaker",
-  // "language",
   "satisfaction",
 ];
 
@@ -76,51 +60,20 @@ export default class Fastr {
   private videos: Collection<Video>;
 
   constructor(options: FastrOptions) {
-    this.reload(options);
-  }
-
-  reload(options: FastrOptions) {
     Logger.time("Create empty Loki database");
     this.loki = new Loki("mem.db", { adapter: new Loki.LokiMemoryAdapter() });
     Logger.timeEnd("Create empty Loki database");
 
-    if (!options.serialized) {
-      let docs;
-      if (options.dataDir) {
-        docs = this.listDocuments(path.resolve(options.dataDir));
-      } else if (options.documents) {
-        docs = options.documents;
-      } else {
-        throw { message: "Neither 'dataDir' nor 'docs' are specified!" };
-      }
-      this.initLokiCollections();
-      if (options.buildOnly === "lunr") {
-        this.buildLunrIndex(docs);
-      } else if (options.buildOnly === "loki") {
-        this.buildLunrIndex([]);
-        this.buildLokiIndex(docs);
-      } else {
-        this.buildLunrIndex(docs);
-        this.buildLokiIndex(docs);
-      }
+    const { dataDir, documents } = options;
+    if (!dataDir && !documents) {
+      throw { message: "Neither 'dataDir' nor 'documents' parameter are specified!" };
+    }
+
+    if (dataDir) {
+      this.loadIndex(dataDir);
     } else {
-      if (options.dataDir) {
-        this.loadIndex(path.resolve(options.dataDir));
-      } else if (options.lokiDir) {
-        const lokiData = fs.readFileSync(path.join(path.resolve(options.lokiDir), "loki.json"))
-        this.loadLokiIndex(lokiData);
-      } else if (options.lunrDir) {
-        const lunrData = fs.readFileSync(path.join(path.resolve(options.lunrDir), "lunr.json"))
-        this.loadLunrIndex(lunrData);
-      } else if (options.lokiData || options.lunrData) {
-        this.loadLokiIndex(options.lokiData);
-        this.loadLunrIndex(options.lunrData);
-      } else {
-        throw {
-          message:
-            "Neither 'dataDir' nor 'lokiData' nor 'lunrData' are specified!",
-        };
-      }
+      this.buildLunrIndex(documents);
+      this.buildLokiIndex(documents);
     }
   }
 
@@ -155,12 +108,21 @@ export default class Fastr {
   }
 
   private buildLokiIndex(docs: Video[]) {
+    this.initLokiCollections();
     Logger.time("Populate Loki database");
     docs.forEach((video) => {
       this.leaveOnlySpeakersTwitter(video);
       this.videos.insert(this.filterFields(video));
     });
     Logger.timeEnd("Populate Loki database");
+  }
+
+  private initLokiCollections() {
+    Logger.time(`Creating empty video collection`);
+    this.videos = this.loki.addCollection(`videos`, {
+      unique: ["objectID"]
+    });
+    Logger.timeEnd(`Creating empty video collection`);
   }
 
   leaveOnlySpeakersTwitter = (object: any): any => {
@@ -179,15 +141,8 @@ export default class Fastr {
     return object;
   };
 
-  private initLokiCollections() {
-    Logger.time(`Creating empty video collection`);
-    this.videos = this.loki.addCollection(`videos`, {
-      unique: ["objectID"]
-    });
-    Logger.timeEnd(`Creating empty video collection`);
-  }
-
-  private loadIndex(dataHome: string) {
+  private loadIndex(dir: string) {
+    const dataHome = path.resolve(dir);
     Logger.time(`Loading Loki and Lunr data from ${dataHome}`);
     this.loadLokiIndex(
       fs.readFileSync(path.join(path.resolve(dataHome), "loki.json"))
@@ -251,35 +206,5 @@ export default class Fastr {
       .find(refinement)
       .compoundsort(sorting.loki())
       .data();
-  }
-
-  private stripMetadata<T>(lokiRecord: T & LokiObj): T {
-    const cleanRecord = Object.assign({}, lokiRecord);
-    delete cleanRecord["meta"];
-    delete cleanRecord["$loki"];
-    return cleanRecord;
-  }
-
-  private listDocuments(dataHome: string): Video[] {
-    Logger.info(`Loading .json docs from dir ${dataHome}`);
-    Logger.time(`Loading .json docs from dir ${dataHome}`);
-
-    let docs = this.walkDirSync(dataHome)
-      .filter((f) => f.endsWith(".json"))
-      .map((f) => JSON.parse(fs.readFileSync(f).toString()));
-
-    Logger.timeEnd(`Loading .json docs from dir ${dataHome}`);
-    Logger.info(`${docs.length} docs loaded`);
-
-    return docs;
-  }
-
-  private walkDirSync(dir: string, fileList: string[] = []): string[] {
-    fs.readdirSync(dir).forEach((file) => {
-      fileList = fs.statSync(path.join(dir, file)).isDirectory()
-        ? this.walkDirSync(path.join(dir, file), fileList)
-        : fileList.concat(path.join(dir, file));
-    });
-    return fileList;
   }
 }
