@@ -1,51 +1,114 @@
 import * as path from "path";
 import * as fs from 'fs'
 import Fastr from '../Fastr'
-import { Video } from '../Fastr'
+import { Video, Criteria } from '../Fastr'
 
 describe('Fastr.ts', () => {
 
-  it("finds videos if speaker's name is followed by a colon", () => {
-    const video = loadVideo('-ES1wlV-8lU')
-    expect(video.title).toEqual("Nickolas Means: The Building Built on Stilts")
-
-    const documents = [video]
+  it("returns all necessary video information", () => {
+    const documents = [loadVideo('--AguZ20lLA')]
     const fastr = new Fastr({ documents })
-    const results = fastr.searchInLunr('Means', ['title'])
+    const criteria = new Criteria();
+    const hits = fastr.search(criteria);
+    const [hit] = hits
+    expect(hit.recordingDate).toEqual(1507536000)
+    expect(hit.satisfaction).toEqual(85)
+    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hit.speakers).toContain("eduardsi")
+    expect(hit.speakers).toContain("codingandrey")
+  })
+
+  it("finds videos by query", () => {
+    const video = loadVideo('-ES1wlV-8lU')
+    const video2 = loadVideo('6XdwHo1BWwY');
+
+    expect(video.title).toEqual("Nickolas Means: The Building Built on Stilts")
+    const documents = [video, video2]
+    const fastr = new Fastr({ documents })
+    const criteria = new Criteria().limitFts('Means');
+    const results = fastr.search(criteria);
     expect(results).toHaveLength(1);
   })
 
-  it("finds videos with multiple speakers", () => {
-    const video = loadVideo('--AguZ20lLA');
-    const documents = [video]
+  it("finds videos by speaker's twitter", () => {
+    const documents = loadVideos(['--AguZ20lLA', '6XdwHo1BWwY'])
     const fastr = new Fastr({ documents })
-    let results = fastr.searchInLunr('GraphQL', ['title'])
-    expect(results).toHaveLength(1)
-
-    const [firstHit] = results
-    expect(firstHit.recordingDate).toEqual(1507536000)
-    expect(firstHit.satisfaction).toEqual(85)
-    expect(firstHit.objectID).toEqual("--AguZ20lLA")
-    expect(firstHit.speaker).toContain("eduardsi")
-    expect(firstHit.speaker).toContain("codingandrey")
+    const criteria = new Criteria().limitSpeakers(['eduardsi'])
+    const hits = fastr.search(criteria);
+    const [hit] = hits
+    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hits).toHaveLength(1)
   })
 
-  it('returns all serialized videos from loki and lunr', () => {
+  it("finds videos by ids", () => {
+    const documents = loadVideos(['--AguZ20lLA', '6XdwHo1BWwY'])
+    const fastr = new Fastr({ documents })
+    const criteria = new Criteria().limitIds(['--AguZ20lLA'])
+    const hits = fastr.search(criteria);
+    const [hit] = hits
+    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hits).toHaveLength(1)
+  })
+
+  it("finds videos by channels", () => {
+    const documents = loadVideos(['--AguZ20lLA', '6XdwHo1BWwY'])
+    const fastr = new Fastr({ documents })
+    const criteria = new Criteria().limitChannels(['Fun Fun Function'])
+    const hits = fastr.search(criteria);
+    const [hit] = hits
+    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hits).toHaveLength(1)
+  })
+
+  it("supports exclusions", () => {
+    const documents = loadVideos(['--AguZ20lLA', '6XdwHo1BWwY', '59ck_Z75cEY']);
+    const fastr = new Fastr({ documents })
+    const criteria = new Criteria().excludeIds(['--AguZ20lLA', '6XdwHo1BWwY']);
+    const hits = fastr.search(criteria);
+    const [hit] = hits
+    expect(hit.objectID).toEqual("59ck_Z75cEY")
+    expect(hits).toHaveLength(1)
+  })
+
+  it('returns all serialized videos ordered by satisfaction desc', () => {
     const documents = videos(__dirname + '/data');
-    new Fastr({ documents }).serializeToDir('./serialized')
+    const dataDir = './serialized';
+    new Fastr({ documents }).serializeToDir(dataDir)
 
-    const fastr = new Fastr({ dataDir: './serialized' })
+    const fastr = new Fastr({ dataDir })
 
-    const lokiHits = fastr.searchInLoki({}, ["-featured"])
-    expect(lokiHits).toHaveLength(61)
+    const criteria = new Criteria();
+    const hits = fastr.search(criteria);
+    expect(hits[0].satisfaction).toBe(280)
+    expect(hits[1].satisfaction).toBe(277)
+    expect(hits[2].satisfaction).toBe(230)
+    expect(hits[60].satisfaction).toBe(-200)
+    expect(hits).toHaveLength(61)
+  })
 
-    const lunrHits = fastr.searchInLunr("", ["-featured"])
-    expect(lunrHits).toHaveLength(61)
+  it('returns all serialized videos showing newest first', () => {
+    const documents = videos(__dirname + '/data');
+    const dataDir = './serialized';
+    new Fastr({ documents }).serializeToDir(dataDir)
+
+    const fastr = new Fastr({ dataDir })
+
+    const criteria = new Criteria().enforceOrder('recordingDate');
+    const hits = fastr.search(criteria);
+    expect(hits[0].recordingDate).toBe(1530195276)
+    expect(hits[1].recordingDate).toBe(1529329401)
+    expect(hits[2].recordingDate).toBe(1527478169)
+    expect(hits[60].recordingDate).toBe(1191902130)
+    expect(hits).toHaveLength(61)
   })
 
 })
 
-function loadVideo(id: string) {
+function loadVideos(ids: string[]): Video[] {
+  return ids.map(id => loadVideo(id))
+}
+
+function loadVideo(id: string): Video {
   return JSON.parse(fs.readFileSync(__dirname + `/data/${id}.json`).toString())
 }
 

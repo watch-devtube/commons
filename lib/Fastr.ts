@@ -1,20 +1,15 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as Lunr from "lunr";
-import * as Loki from "lokijs";
-
 import { Logger } from "./Logger";
-import { Sorting } from "./Sorting";
 import { alwaysArray } from "./Arrays";
+import { orderBy } from "lodash";
+
+const DEFAULT_VIDEO_ORDER = 'satisfaction';
 
 export interface FastrOptions {
   dataDir?: string;
   documents?: Video[];
-}
-
-export interface Language {
-  name: string;
-  videoCount: number;
 }
 
 export interface Speaker {
@@ -22,14 +17,10 @@ export interface Speaker {
   name: string;
 }
 
-export interface Year {
-  year: number;
-  videoCount: number;
-}
-
 export interface Video {
   objectID: string;
   title: string;
+  featured: boolean;
   satisfaction: number;
   creationDate: number;
   recordingDate: number;
@@ -39,51 +30,109 @@ export interface Video {
   language: string;
 }
 
-const allowedFields = [
-  "objectID",
-  "featured",
-  "channelTitle",
-  "recordingDate",
-  "speaker",
-  "satisfaction",
-];
-
 export interface SerializedIndex {
   loki: string;
   lunr: string;
 }
 
-export default class Fastr {
-  private loki: Loki;
-  private lunr: Lunr.Index;
+interface LokiObject {
+  objectID: string;
+  channelTitle: string;
+  recordingDate: number;
+  speakers: string[];
+  satisfaction: number;
+}
 
-  private videos: Collection<Video>;
+class Loki {
+
+  private _videoIndexById = {};
+  private _videos: LokiObject[] = []
+
+  video(id: string): LokiObject {
+    const index = this._videoIndexById[id];
+    return this._videos[index];
+  }
+
+  videos(): LokiObject[] {
+    return this._videos;
+  }
+
+  private constructor() {
+  }
+
+  public static fromVideos(videos: Video[]): Loki {
+    const loki = new Loki();
+    const videosOrdered = orderBy(videos, [DEFAULT_VIDEO_ORDER], ['desc']);
+    loki.pushAll(videosOrdered);
+    return loki;
+  }
+
+  public static fromJson(json: string): Loki {
+    const { _videos, _videoIndexById } = JSON.parse(json);
+    const loki = new Loki();
+    loki._videos = _videos;
+    loki._videoIndexById = _videoIndexById;
+    return loki;
+  }
+
+  pushAll(videos: Video[]) {
+    videos.forEach(video => {
+      this._videoIndexById[video.objectID] = this._videos.length;
+      this._videos.push(this.toLokiObject(video))
+    });
+  }
+
+  private toLokiObject({ objectID, channelTitle, recordingDate, satisfaction, speaker }: Video): LokiObject {
+    const speakers = alwaysArray(speaker).map(speaker => speaker.twitter);
+    const lokiObject = {
+      objectID,
+      channelTitle,
+      recordingDate,
+      satisfaction,
+      speakers
+    } as LokiObject
+    return lokiObject;
+  };
+
+}
+
+class DataHome {
+  constructor(readonly dataDir: string) {
+  }
+
+  readFile(name: string) {
+    const dataHome = path.resolve(this.dataDir);
+    return fs.readFileSync(path.join(path.resolve(dataHome), name))
+  }
+}
+
+export default class Fastr {
+  private readonly loki: Loki;
+  private readonly lunr: Lunr.Index;
 
   constructor(options: FastrOptions) {
-    Logger.time("Create empty Loki database");
-    this.loki = new Loki("mem.db", { adapter: new Loki.LokiMemoryAdapter() });
-    Logger.timeEnd("Create empty Loki database");
-
     const { dataDir, documents } = options;
     if (!dataDir && !documents) {
       throw { message: "Neither 'dataDir' nor 'documents' parameter are specified!" };
     }
 
     if (dataDir) {
-      this.loadIndex(dataDir);
+      const dataHome = new DataHome(dataDir);
+      Logger.time(`Loading Loki and Lunr data from ${dataHome}`);
+      this.loki = this.loadLokiIndex(dataHome.readFile("loki.json"));
+      this.lunr = this.loadLunrIndex(dataHome.readFile("lunr.json"));
+      Logger.timeEnd(`Loading Loki and Lunr data from ${dataHome}`);
     } else {
-      this.buildLunrIndex(documents);
-      this.buildLokiIndex(documents);
+      this.lunr = this.buildLunrIndex(documents);
+      this.loki = this.buildLokiIndex(documents);
     }
   }
 
   private buildLunrIndex(docs: Video[]) {
     Logger.time("Populate Lunr index");
 
-    let builder = new Lunr.Builder();
-
+    const builder = new Lunr.Builder();
     builder.pipeline.remove(Lunr.trimmer);
-
     builder.ref("objectID");
     builder.field("title", {
       extractor: (doc: Video) => doc.title.replace(":", " ").replace("?", ""),
@@ -101,82 +150,37 @@ export default class Fastr {
     Logger.timeEnd("Add all documents to Lunr index");
 
     Logger.time("Build Lunr index");
-    this.lunr = builder.build();
+    const lunr = builder.build();
     Logger.timeEnd("Build Lunr index");
 
     Logger.timeEnd("Populate Lunr index");
+    return lunr;
   }
 
   private buildLokiIndex(docs: Video[]) {
-    this.initLokiCollections();
     Logger.time("Populate Loki database");
-    docs.forEach((video) => {
-      this.leaveOnlySpeakersTwitter(video);
-      this.videos.insert(this.filterFields(video));
-    });
+    const loki = Loki.fromVideos(docs);
     Logger.timeEnd("Populate Loki database");
-  }
-
-  private initLokiCollections() {
-    Logger.time(`Creating empty video collection`);
-    this.videos = this.loki.addCollection(`videos`, {
-      unique: ["objectID"]
-    });
-    Logger.timeEnd(`Creating empty video collection`);
-  }
-
-  leaveOnlySpeakersTwitter = (object: any): any => {
-    object.speaker = alwaysArray(object.speaker).map(speaker => {
-      delete speaker.name
-      return speaker.twitter
-    })
-  }
-
-  filterFields = (object: any): any => {
-    Object.keys(object).forEach((field) => {
-      if (allowedFields.indexOf(field) == -1) {
-        delete object[field];
-      }
-    });
-    return object;
-  };
-
-  private loadIndex(dir: string) {
-    const dataHome = path.resolve(dir);
-    Logger.time(`Loading Loki and Lunr data from ${dataHome}`);
-    this.loadLokiIndex(
-      fs.readFileSync(path.join(path.resolve(dataHome), "loki.json"))
-    );
-    this.loadLunrIndex(
-      fs.readFileSync(path.join(path.resolve(dataHome), "lunr.json"))
-    );
-    Logger.timeEnd(`Loading Loki and Lunr data from ${dataHome}`);
+    return loki;
   }
 
   private loadLokiIndex(serializedIndex: string | Buffer) {
-    if (serializedIndex instanceof Buffer) {
-      Logger.time(`Loading Loki data from Buffer`);
-      this.loki.loadJSON(serializedIndex.toString());
-      Logger.timeEnd(`Loading Loki data from Buffer`);
-    } else {
-      Logger.time(`Loading Loki data from string`);
-      this.loki.loadJSON(serializedIndex);
-      Logger.timeEnd(`Loading Loki data from string`);
-    }
-    Logger.time(`Retrieving Loki collections`);
-    this.videos = this.loki.getCollection("videos");
-    Logger.timeEnd(`Retrieving Loki collections`);
+    Logger.time(`Loading Loki data from Buffer`);
+    const loki = Loki.fromJson(serializedIndex.toString());
+    Logger.timeEnd(`Loading Loki data from Buffer`);
+    return loki;
   }
 
   private loadLunrIndex(serializedIndex: string | Buffer) {
     Logger.time(`Loading Lunr data`);
-    this.lunr = Lunr.Index.load(JSON.parse(serializedIndex.toString()));
+    const lunr = Lunr.Index.load(JSON.parse(serializedIndex.toString()));
     Logger.timeEnd(`Loading Lunr data`);
+    return lunr;
   }
 
   serialize(): SerializedIndex {
     return {
-      loki: this.loki.serialize(),
+      loki: JSON.stringify(this.loki),
       lunr: JSON.stringify(this.lunr),
     };
   }
@@ -191,20 +195,90 @@ export default class Fastr {
     fs.writeFileSync(path.join(absDir, "lunr.json"), index.lunr);
   }
 
-  searchInLunr(query: string, sortingSpecs: string[]): Video[] {
-    let sorting = new Sorting(sortingSpecs);
-    let hits = this.lunr.search(query);
-    return hits
-      .map((hit) => this.videos.by("objectID", hit.ref))
-      .sort(sorting.lunr());
+  search(criteria: Criteria): LokiObject[] {
+    const videos = criteria.isFts()
+      ?
+      this.lunr.search(criteria.ftsQuery()).map(hit => this.loki.video(hit.ref))
+      :
+      this.loki.videos()
+
+    const matchingVideos = videos.filter(video => criteria.isSatisfiedBy(video))
+    if (criteria.shouldSort()) {
+      return orderBy(matchingVideos, [criteria.order()], ['desc'])
+    } else {
+      return matchingVideos;
+    }
   }
 
-  searchInLoki(refinement = {}, sortingSpecs: string[]): Video[] {
-    let sorting = new Sorting(sortingSpecs);
-    return this.videos
-      .chain()
-      .find(refinement)
-      .compoundsort(sorting.loki())
-      .data();
+}
+
+export class Criteria {
+  private _query: string;
+  private _speakers: string[];
+  private _channels: string[];
+  private _ids: string[];
+  private _noIds: string[];
+  private _order: keyof LokiObject;
+
+  limitIds(ids: string[]): Criteria {
+    this._ids = ids;
+    return this;
+  }
+
+  limitSpeakers(speakers: string[]): Criteria {
+    this._speakers = speakers;
+    return this;
+  }
+
+  limitChannels(channels: string[]): Criteria {
+    this._channels = channels;
+    return this;
+  }
+
+  limitFts(query: string): Criteria {
+    this._query = query;
+    return this;
+  }
+
+  enforceOrder(order: keyof LokiObject): Criteria {
+    this._order = order;
+    return this;
+  }
+
+  order(): keyof LokiObject {
+    return this._order;
+  }
+
+  shouldSort(): boolean {
+    return !!this._order && this._order !== DEFAULT_VIDEO_ORDER;
+  }
+
+  isFts(): boolean {
+    return !!this._query;
+  }
+
+  ftsQuery(): string {
+    return this._query;
+  }
+
+  excludeIds(ids: string[]): Criteria {
+    this._noIds = ids;
+    return this;
+  }
+
+  isSatisfiedBy(video: LokiObject): boolean {
+    const isExcluded = this._noIds && this._noIds.includes(video.objectID);
+    if (isExcluded) {
+      return false;
+    }
+
+    if (this._channels)
+      return this._channels.some(it => video.channelTitle === it)
+    if (this._speakers)
+      return this._speakers.some(it => video.speakers.includes(it))
+    if (this._ids)
+      return this._ids.some(it => video.objectID === it)
+
+    return true;
   }
 }

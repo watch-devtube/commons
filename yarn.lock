@@ -188,13 +188,14 @@
   version "4.14.110"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.110.tgz#fb07498f84152947f30ea09d89207ca07123461e"
 
-"@types/lokijs@^1.5.2":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@types/lokijs/-/lokijs-1.5.2.tgz#ed228f080033ce1fb16eff4acde65cb9ae0f1bf2"
-
 "@types/long@^3.0.32":
   version "3.0.32"
   resolved "https://registry.yarnpkg.com/@types/long/-/long-3.0.32.tgz#f4e5af31e9e9b196d8e5fca8a5e2e20aa3d60b69"
+
+"@types/lunr@^2.3.3":
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/@types/lunr/-/lunr-2.3.3.tgz#ec985618fd2712c010f8edab4f1ae7784ad7c583"
+  integrity sha512-09sXZZVsB3Ib41U0fC+O1O+4UOZT1bl/e+/QubPxpqDWHNEchvx/DEb1KJMOwq6K3MTNzZFoNSzVdR++o1DVnw==
 
 "@types/node@*", "@types/node@^10.0.3":
   version "10.5.2"
@@ -2585,10 +2586,6 @@ log-driver@1.2.7:
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/log-driver/-/log-driver-1.2.7.tgz#63b95021f0702fedfa2c9bb0a24e7797d71871d8"
 
-lokijs@^1.5.5:
-  version "1.5.5"
-  resolved "https://registry.yarnpkg.com/lokijs/-/lokijs-1.5.5.tgz#1c21f82af7579037fade7b9e4813485c23708bb6"
-
 long@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/long/-/long-4.0.0.tgz#9a7b71cfb7d361a194ea555241c92f7468d5bf28"
@@ -3859,10 +3856,6 @@ test-exclude@^4.2.1:
     object-assign "^4.1.0"
     read-pkg-up "^1.0.1"
     require-main-filename "^1.0.1"
-
-thenby@^1.2.6:
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/thenby/-/thenby-1.2.6.tgz#96a685699d5a1e9cb0a11762293ae621d886bb0f"
 
 throat@^4.0.0:
   version "4.1.0"
