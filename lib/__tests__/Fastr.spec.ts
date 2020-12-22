@@ -3,58 +3,25 @@ import * as fs from 'fs'
 import Fastr from '../Fastr'
 import { Video, Criteria } from '../Fastr'
 
+const indexFile = 'index.json'
+const dataDir = './data';
+
 describe('Fastr.ts', () => {
 
-  it("returns all necessary video information", () => {
-    const documents = [loadVideo('--AguZ20lLA')]
-    const fastr = new Fastr({ documents })
-    const criteria = new Criteria();
-    const hits = fastr.search(criteria);
-    const [hit] = hits
-    expect(hit.recordingDate).toEqual(1507536000)
-    expect(hit.satisfaction).toEqual(85)
-    expect(hit.objectID).toEqual("--AguZ20lLA")
-    expect(hit.speakers).toContain("eduardsi")
-    expect(hit.speakers).toContain("codingandrey")
-  })
-
-  it("finds videos by query", () => {
-    const video = loadVideo('-ES1wlV-8lU')
+  it("finds videos by title match", () => {
+    const video1 = loadVideo('-ES1wlV-8lU');
     const video2 = loadVideo('6XdwHo1BWwY');
+    const video3 = loadVideo('3DLfkWWw_Tg');
 
-    expect(video.title).toEqual("Nickolas Means: The Building Built on Stilts")
-    const documents = [video, video2]
+    expect(video1.title).toEqual("Nickolas Means: The Building Built on Stilts")
+    expect(video3.title).toEqual("C++: The Open Source Computational Geometry Algorithms Library")
+
+    const documents = [video1, video2, video3]
     const fastr = new Fastr({ documents })
-    const results = fastr.fullTextSearch('Means');
-    expect(results).toHaveLength(1);
-  })
-
-  it("finds videos by query default ordered by satisfaction desc", () => {
-    const documents = videos(__dirname + '/data');
-    const dataDir = './serialized';
-    new Fastr({ documents }).serializeToDir(dataDir)
-
-    const fastr = new Fastr({ documents })
-    const hits = fastr.fullTextSearch('a');
-    expect(hits.map(hit => hit.satisfaction)).toEqual([230, 195, 100, 100, 61, 0])
-  })
-
-  it("finds videos by query showing newest first", () => {
-    const documents = videos(__dirname + '/data');
-    const dataDir = './serialized';
-    new Fastr({ documents }).serializeToDir(dataDir)
-
-    const fastr = new Fastr({ documents })
-    const hits = fastr.fullTextSearch('a', 'recordingDate');
-    expect(hits).toHaveLength(6);
-    expect(hits.map(hit => hit.recordingDate)).toEqual([
-      1471881367,
-      1445972909,
-      1358668723,
-      1320967112,
-      1310034622,
-      1264097660
-    ])
+    expect(fastr.search(new Criteria().limitFts('Means'))).toHaveLength(1);
+    expect(fastr.search(new Criteria().limitFts('Stilts'))).toHaveLength(1);
+    expect(fastr.search(new Criteria().limitFts('The Building Built on Stilts'))).toHaveLength(1);
+    expect(fastr.search(new Criteria().limitFts('C++'))).toHaveLength(1);
   })
 
   it("finds videos by speaker's twitter", () => {
@@ -63,7 +30,7 @@ describe('Fastr.ts', () => {
     const criteria = new Criteria().limitSpeakers(['eduardsi'])
     const hits = fastr.search(criteria);
     const [hit] = hits
-    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hit).toEqual("--AguZ20lLA")
     expect(hits).toHaveLength(1)
   })
 
@@ -73,7 +40,7 @@ describe('Fastr.ts', () => {
     const criteria = new Criteria().limitIds(['--AguZ20lLA'])
     const hits = fastr.search(criteria);
     const [hit] = hits
-    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hit).toEqual("--AguZ20lLA")
     expect(hits).toHaveLength(1)
   })
 
@@ -83,7 +50,7 @@ describe('Fastr.ts', () => {
     const criteria = new Criteria().limitChannels(['Fun Fun Function'])
     const hits = fastr.search(criteria);
     const [hit] = hits
-    expect(hit.objectID).toEqual("--AguZ20lLA")
+    expect(hit).toEqual("--AguZ20lLA")
     expect(hits).toHaveLength(1)
   })
 
@@ -93,39 +60,37 @@ describe('Fastr.ts', () => {
     const criteria = new Criteria().excludeIds(['--AguZ20lLA', '6XdwHo1BWwY']);
     const hits = fastr.search(criteria);
     const [hit] = hits
-    expect(hit.objectID).toEqual("59ck_Z75cEY")
+    expect(hit).toEqual("59ck_Z75cEY")
     expect(hits).toHaveLength(1)
   })
 
   it('returns all serialized videos default ordered by satisfaction desc', () => {
     const documents = videos(__dirname + '/data');
-    const dataDir = './serialized';
-    new Fastr({ documents }).serializeToDir(dataDir)
+    new Fastr({ documents }).serializeToFile(indexFile);
 
-    const fastr = new Fastr({ dataDir })
+    const fastr = new Fastr({ indexFile })
 
     const criteria = new Criteria();
     const hits = fastr.search(criteria);
-    expect(hits[0].satisfaction).toBe(280)
-    expect(hits[1].satisfaction).toBe(277)
-    expect(hits[2].satisfaction).toBe(230)
-    expect(hits[60].satisfaction).toBe(-200)
+    expect(hits[0]).toBe("6BYq6hNhceI")
+    expect(hits[1]).toBe("3DLfkWWw_Tg")
+    expect(hits[2]).toBe("6C24p0IhvqI")
+    expect(hits[60]).toBe("-Ew5zdAnLuw")
     expect(hits).toHaveLength(61)
   })
 
   it('returns all serialized videos showing newest first', () => {
     const documents = videos(__dirname + '/data');
-    const dataDir = './serialized';
-    new Fastr({ documents }).serializeToDir(dataDir)
+    new Fastr({ documents }).serializeToFile(indexFile);
 
-    const fastr = new Fastr({ dataDir })
+    const fastr = new Fastr({ indexFile })
 
     const criteria = new Criteria();
     const hits = fastr.search(criteria, 'recordingDate');
-    expect(hits[0].recordingDate).toBe(1530195276)
-    expect(hits[1].recordingDate).toBe(1529329401)
-    expect(hits[2].recordingDate).toBe(1527478169)
-    expect(hits[60].recordingDate).toBe(1191902130)
+    expect(hits[0]).toBe("7bYIr8144Ms")
+    expect(hits[1]).toBe("1meg-Dl_Urw")
+    expect(hits[2]).toBe("4rT0xjmWCCo")
+    expect(hits[60]).toBe("6omCljcgvMI")
     expect(hits).toHaveLength(61)
   })
 

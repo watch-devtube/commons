@@ -64,7 +64,7 @@ typings/
 src/*.js
 
 # serialized index
-serialized/*.json
+data/index.json
 
 # build dir
 dist
