@@ -217,13 +217,17 @@ export class Criteria {
         video.speakerNames.some(name => name.toLowerCase().includes(this._query))
     }
 
-    if (!isEmpty(this._channels))
-      return this._channels.some(it => video.channelTitle === it)
-    if (!isEmpty(this._speakers))
-      return this._speakers.some(it => video.speakerTwt.includes(it))
-    if (!isEmpty(this._ids))
-      return this._ids.some(it => video.objectID === it)
+    const noChannel = isEmpty(this._channels);
+    const noSpeakers = isEmpty(this._speakers);
+    const noIds = isEmpty(this._ids);
 
-    return true;
+    if (noChannel && noSpeakers && noIds) {
+      return true;
+    }
+
+    const channelMatch = !noChannel && this._channels.some(it => video.channelTitle === it)
+    const speakerMatch = !noSpeakers && this._speakers.some(it => video.speakerTwt.includes(it))
+    const exactIdMatch = !noIds && this._ids.some(it => video.objectID === it)
+    return channelMatch || speakerMatch || exactIdMatch;
   }
 }

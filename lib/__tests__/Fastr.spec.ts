@@ -54,6 +54,17 @@ describe('Fastr.ts', () => {
     expect(hits).toHaveLength(1)
   })
 
+  it("finds videos by channel, speaker, and id mix", () => {
+    const documents = loadVideos(['--AguZ20lLA', '6XdwHo1BWwY', '59ck_Z75cEY', '7cEfxhsn3Bg'])
+    const fastr = new Fastr({ documents })
+    const criteria = new Criteria()
+      .limitSpeakers(['codingandrey'])
+      .limitChannels(['PyData'])
+      .limitIds(['6XdwHo1BWwY'])
+    const hits = fastr.search(criteria);
+    expect(hits).toHaveLength(3)
+  })
+
   it("supports exclusions", () => {
     const documents = loadVideos(['--AguZ20lLA', '6XdwHo1BWwY', '59ck_Z75cEY']);
     const fastr = new Fastr({ documents })
