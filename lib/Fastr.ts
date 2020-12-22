@@ -3,7 +3,7 @@ import * as path from "path";
 
 import { Logger } from "./Logger";
 import { alwaysArray } from "./Arrays";
-import { orderBy } from "lodash";
+import { orderBy, isEmpty } from "lodash";
 import * as msgpack from "msgpack"
 
 export interface FastrOptions {
@@ -206,22 +206,22 @@ export class Criteria {
   }
 
   isSatisfiedBy(video: IndexedVideo): boolean {
-    const isExcluded = this._noIds && this._noIds.includes(video.objectID);
+    const isExcluded = !isEmpty(this._noIds) && this._noIds.includes(video.objectID);
     if (isExcluded) {
       return false;
     }
 
-    if (this._query) {
+    if (!isEmpty(this._query)) {
       return video.title.toLowerCase().includes(this._query) ||
         video.channelTitle.toLowerCase().includes(this._query) ||
         video.speakerNames.some(name => name.toLowerCase().includes(this._query))
     }
 
-    if (this._channels)
+    if (!isEmpty(this._channels))
       return this._channels.some(it => video.channelTitle === it)
-    if (this._speakers)
+    if (!isEmpty(this._speakers))
       return this._speakers.some(it => video.speakerTwt.includes(it))
-    if (this._ids)
+    if (!isEmpty(this._ids))
       return this._ids.some(it => video.objectID === it)
 
     return true;
