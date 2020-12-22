@@ -36,13 +36,7 @@ describe('Fastr.ts', () => {
 
     const fastr = new Fastr({ documents })
     const hits = fastr.fullTextSearch('a');
-    expect(hits).toHaveLength(6);
-    expect(hits[0].satisfaction).toBe(230)
-    expect(hits[1].satisfaction).toBe(195)
-    expect(hits[2].satisfaction).toBe(100)
-    expect(hits[3].satisfaction).toBe(100)
-    expect(hits[4].satisfaction).toBe(61)
-    expect(hits[5].satisfaction).toBe(0)
+    expect(hits.map(hit => hit.satisfaction)).toEqual([230, 195, 100, 100, 61, 0])
   })
 
   it("finds videos by query showing newest first", () => {
@@ -53,12 +47,14 @@ describe('Fastr.ts', () => {
     const fastr = new Fastr({ documents })
     const hits = fastr.fullTextSearch('a', 'recordingDate');
     expect(hits).toHaveLength(6);
-    expect(hits[0].recordingDate).toBe(1471881367)
-    expect(hits[1].recordingDate).toBe(1445972909)
-    expect(hits[2].recordingDate).toBe(1358668723)
-    expect(hits[3].recordingDate).toBe(1320967112)
-    expect(hits[4].recordingDate).toBe(1310034622)
-    expect(hits[5].recordingDate).toBe(1264097660)
+    expect(hits.map(hit => hit.recordingDate)).toEqual([
+      1471881367,
+      1445972909,
+      1358668723,
+      1320967112,
+      1310034622,
+      1264097660
+    ])
   })
 
   it("finds videos by speaker's twitter", () => {
