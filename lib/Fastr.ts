@@ -39,7 +39,7 @@ interface IndexedVideo {
   title: string
 }
 
-type Order = 'satisfaction' | 'recordingDate'
+export type Order = 'satisfaction' | 'recordingDate'
 type Index = '_videoIdsBySatisfaction' | '_videoIdsByNew'
 
 const indices = new Map<Order, Index>()
@@ -54,6 +54,9 @@ class FastIndex {
 
   videos(order: Order): IndexedVideo[] {
     const index = indices.get(order);
+    if (!index) {
+      throw new Error(`No index for order: ${order}`)
+    }
     return this[index].map(objectID => this._videos[objectID]);
   }
 
@@ -193,7 +196,7 @@ export class Criteria {
   }
 
   limitFts(query: string): Criteria {
-    this._query = query;
+    this._query = query.trim().toLowerCase();
     return this;
   }
 
@@ -209,9 +212,9 @@ export class Criteria {
     }
 
     if (this._query) {
-      return video.title.includes(this._query) ||
-        video.channelTitle.includes(this._query) ||
-        video.speakerNames.some(name => name.includes(this._query))
+      return video.title.toLowerCase().includes(this._query) ||
+        video.channelTitle.toLowerCase().includes(this._query) ||
+        video.speakerNames.some(name => name.toLowerCase().includes(this._query))
     }
 
     if (this._channels)

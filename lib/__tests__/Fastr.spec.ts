@@ -18,6 +18,7 @@ describe('Fastr.ts', () => {
     const documents = [video1, video2, video3]
     const fastr = new Fastr({ documents })
     expect(fastr.search(new Criteria().limitFts('Means'))).toHaveLength(1);
+    expect(fastr.search(new Criteria().limitFts('MEANS'))).toHaveLength(1);
     expect(fastr.search(new Criteria().limitFts('Stilts'))).toHaveLength(1);
     expect(fastr.search(new Criteria().limitFts('The Building Built on Stilts'))).toHaveLength(1);
     expect(fastr.search(new Criteria().limitFts('C++'))).toHaveLength(1);
