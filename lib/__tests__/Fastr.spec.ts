@@ -25,9 +25,40 @@ describe('Fastr.ts', () => {
     expect(video.title).toEqual("Nickolas Means: The Building Built on Stilts")
     const documents = [video, video2]
     const fastr = new Fastr({ documents })
-    const criteria = new Criteria().limitFts('Means');
-    const results = fastr.search(criteria);
+    const results = fastr.fullTextSearch('Means');
     expect(results).toHaveLength(1);
+  })
+
+  it("finds videos by query default ordered by satisfaction desc", () => {
+    const documents = videos(__dirname + '/data');
+    const dataDir = './serialized';
+    new Fastr({ documents }).serializeToDir(dataDir)
+
+    const fastr = new Fastr({ documents })
+    const hits = fastr.fullTextSearch('a');
+    expect(hits).toHaveLength(6);
+    expect(hits[0].satisfaction).toBe(230)
+    expect(hits[1].satisfaction).toBe(195)
+    expect(hits[2].satisfaction).toBe(100)
+    expect(hits[3].satisfaction).toBe(100)
+    expect(hits[4].satisfaction).toBe(61)
+    expect(hits[5].satisfaction).toBe(0)
+  })
+
+  it("finds videos by query showing newest first", () => {
+    const documents = videos(__dirname + '/data');
+    const dataDir = './serialized';
+    new Fastr({ documents }).serializeToDir(dataDir)
+
+    const fastr = new Fastr({ documents })
+    const hits = fastr.fullTextSearch('a', 'recordingDate');
+    expect(hits).toHaveLength(6);
+    expect(hits[0].recordingDate).toBe(1471881367)
+    expect(hits[1].recordingDate).toBe(1445972909)
+    expect(hits[2].recordingDate).toBe(1358668723)
+    expect(hits[3].recordingDate).toBe(1320967112)
+    expect(hits[4].recordingDate).toBe(1310034622)
+    expect(hits[5].recordingDate).toBe(1264097660)
   })
 
   it("finds videos by speaker's twitter", () => {
@@ -70,7 +101,7 @@ describe('Fastr.ts', () => {
     expect(hits).toHaveLength(1)
   })
 
-  it('returns all serialized videos ordered by satisfaction desc', () => {
+  it('returns all serialized videos default ordered by satisfaction desc', () => {
     const documents = videos(__dirname + '/data');
     const dataDir = './serialized';
     new Fastr({ documents }).serializeToDir(dataDir)
@@ -93,8 +124,8 @@ describe('Fastr.ts', () => {
 
     const fastr = new Fastr({ dataDir })
 
-    const criteria = new Criteria().enforceOrder('recordingDate');
-    const hits = fastr.search(criteria);
+    const criteria = new Criteria();
+    const hits = fastr.search(criteria, 'recordingDate');
     expect(hits[0].recordingDate).toBe(1530195276)
     expect(hits[1].recordingDate).toBe(1529329401)
     expect(hits[2].recordingDate).toBe(1527478169)

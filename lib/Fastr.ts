@@ -195,18 +195,20 @@ export default class Fastr {
     fs.writeFileSync(path.join(absDir, "lunr.json"), index.lunr);
   }
 
-  search(criteria: Criteria): LokiObject[] {
-    const videos = criteria.isFts()
-      ?
-      this.lunr.search(criteria.ftsQuery()).map(hit => this.loki.video(hit.ref))
-      :
-      this.loki.videos()
+  fullTextSearch(query: string, order: keyof LokiObject = DEFAULT_VIDEO_ORDER): LokiObject[] {
+    const videos = this.lunr
+      .search(query)
+      .map(hit => this.loki.video(hit.ref))
+    return orderBy(videos, [order], ['desc'])
+  }
 
+  search(criteria: Criteria, order: keyof LokiObject = DEFAULT_VIDEO_ORDER): LokiObject[] {
+    const videos = this.loki.videos();
     const matchingVideos = videos.filter(video => criteria.isSatisfiedBy(video))
-    if (criteria.shouldSort()) {
-      return orderBy(matchingVideos, [criteria.order()], ['desc'])
-    } else {
+    if (order === DEFAULT_VIDEO_ORDER) {
       return matchingVideos;
+    } else {
+      return orderBy(matchingVideos, [order], ['desc'])
     }
   }
 
@@ -218,7 +220,6 @@ export class Criteria {
   private _channels: string[];
   private _ids: string[];
   private _noIds: string[];
-  private _order: keyof LokiObject;
 
   limitIds(ids: string[]): Criteria {
     this._ids = ids;
@@ -238,19 +239,6 @@ export class Criteria {
   limitFts(query: string): Criteria {
     this._query = query;
     return this;
-  }
-
-  enforceOrder(order: keyof LokiObject): Criteria {
-    this._order = order;
-    return this;
-  }
-
-  order(): keyof LokiObject {
-    return this._order;
-  }
-
-  shouldSort(): boolean {
-    return !!this._order && this._order !== DEFAULT_VIDEO_ORDER;
   }
 
   isFts(): boolean {
