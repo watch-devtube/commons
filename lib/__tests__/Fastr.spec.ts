@@ -4,7 +4,6 @@ import Fastr from '../Fastr'
 import { Video, Criteria } from '../Fastr'
 
 const indexFile = 'index.json'
-const dataDir = './data';
 
 describe('Fastr.ts', () => {
 

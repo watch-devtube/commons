@@ -4,6 +4,7 @@ import * as path from "path";
 import { Logger } from "./Logger";
 import { alwaysArray } from "./Arrays";
 import { orderBy } from "lodash";
+import * as msgpack from "msgpack"
 
 export interface FastrOptions {
   indexFile?: string;
@@ -65,8 +66,8 @@ class FastIndex {
     return index;
   }
 
-  public static fromJson(json: string): FastIndex {
-    const { _videos, _videoIdsByNew, _videoIdsBySatisfaction } = JSON.parse(json);
+  public static fromJson(json: Buffer): FastIndex {
+    const { _videos, _videoIdsByNew, _videoIdsBySatisfaction } = msgpack.unpack(json);
     const index = new FastIndex();
     index._videos = _videos;
     index._videoIdsByNew = _videoIdsByNew;
@@ -141,15 +142,15 @@ export default class Fastr {
     return index;
   }
 
-  private loadIndex(serializedIndex: string | Buffer) {
+  private loadIndex(serializedIndex: Buffer) {
     Logger.time(`Loading Loki data from Buffer`);
-    const index = FastIndex.fromJson(serializedIndex.toString());
+    const index = FastIndex.fromJson(serializedIndex);
     Logger.timeEnd(`Loading Loki data from Buffer`);
     return index;
   }
 
   serialize(): string {
-    return JSON.stringify(this.index)
+    return msgpack.pack(this.index)
   }
 
   serializeToFile(indexFile: string) {
