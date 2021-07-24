@@ -68,3 +68,4 @@ data/index.json
 
 # build dir
 dist
+serialized/
