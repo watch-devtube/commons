@@ -4,7 +4,7 @@ import * as path from "path";
 import { Logger } from "./Logger";
 import { alwaysArray } from "./Arrays";
 import { orderBy, isEmpty } from "lodash";
-import * as msgpack from "msgpack"
+import { decode, encode } from "@msgpack/msgpack";
 
 export interface FastrOptions {
   indexFile?: string;
@@ -46,6 +46,14 @@ const indices = new Map<Order, Index>()
 indices.set('satisfaction', '_videoIdsBySatisfaction')
 indices.set('recordingDate', '_videoIdsByNew')
 
+
+interface MsgPackUnwrapped {
+  _videoIdsBySatisfaction: [],
+  _videoIdsByNew: [],
+  _videos: []
+
+}
+
 class FastIndex {
 
   private _videos = {}
@@ -70,7 +78,7 @@ class FastIndex {
   }
 
   public static fromJson(json: Buffer): FastIndex {
-    const { _videos, _videoIdsByNew, _videoIdsBySatisfaction } = msgpack.unpack(json);
+    const { _videos, _videoIdsByNew, _videoIdsBySatisfaction } = decode(json) as MsgPackUnwrapped;
     const index = new FastIndex();
     index._videos = _videos;
     index._videoIdsByNew = _videoIdsByNew;
@@ -152,8 +160,8 @@ export default class Fastr {
     return index;
   }
 
-  serialize(): string {
-    return msgpack.pack(this.index)
+  serialize(): Uint8Array {
+    return encode(this.index)
   }
 
   serializeToFile(indexFile: string) {
